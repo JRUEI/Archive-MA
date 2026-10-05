@@ -1,4 +1,4 @@
-# 熟肉收藏站（My_Archive）設計
+# MyArc（熟肉收藏站）設計
 
 日期：2026-10-06　狀態：待使用者審閱
 
@@ -44,12 +44,12 @@ youtube: "https://www.youtube.com/watch?v=BTraK6PHUp0"
 ---
 
 ## 【完整逐字稿】
-[00:03.2] [] 中文字幕
-[00:07.5] [說話者] 中文字幕
+[00:03.2] 中文字幕
+[00:07.5] 中文字幕
 ```
 
 - `title`：原標題（oEmbed 取得）。`date`：影片發布日（`yt-dlp` 取得）。
-- 逐字稿行格式沿用 hrmtp 解析器：`[mm:ss.d] [說話者] 內容`；**說話者可為空**（`[]`）。
+- 逐字稿行格式沿用 hrmtp 解析器：`[mm:ss.d] 內容`；**不設說話者欄位**，站上任何地方都不顯示人名。
 - 資料夾不另設設定檔，由各檔 `folder` 值自動彙整。
 - 檔名即 ID，也是詳情頁路由 `/videos/<id>`。
 
@@ -58,7 +58,7 @@ youtube: "https://www.youtube.com/watch?v=BTraK6PHUp0"
 - 頂端資料夾分頁：「全部」加各資料夾（含數量）。選擇狀態存在網址 `?folder=`，可直接分享與重新整理。
 - 下方 16:9 封面卡片網格（手機 1 欄、平板 2 欄、桌面 3 欄）；卡片含資料夾徽章、標題、頻道、日期。依發布日新到舊排序。
 - 封面：`https://i.ytimg.com/vi/<id>/maxresdefault.jpg`，載入失敗（YouTube 對部分影片沒有 maxres）退回 `hqdefault.jpg`。不下載、不存圖。
-- 沿用 hrmtp 的頁首、深色預設主題、配色、右上選單（移除時間軸／日期／展開卡片三個開關）。
+- 站名 MyArc；頁首只留站名與深淺主題切換；深色預設。配色參考 YouTube（#0f0f0f／#181818／#272727、紅 #ff0000 系強調、連結藍）。
 - 點卡片進詳情頁。
 - 空狀態：無影片或該資料夾無影片時顯示一句說明，不空白。
 
@@ -67,10 +67,6 @@ youtube: "https://www.youtube.com/watch?v=BTraK6PHUp0"
 - 頁首：資料夾徽章、標題、頻道、發布日、「前往 YouTube」連結。
 - 內嵌 YouTube 播放器，上疊中文字幕；字幕樣式工具列（位置、字級、字重、三格快捷、時間補償）沿用。
 - 逐字稿列表：點時間跳轉、搜尋、自動捲動，沿用。
-- 說話者處理（v1）：
-  - 該行有說話者才顯示名稱；整支影片都沒有說話者時，不顯示名稱欄。
-  - 字幕上方的人名標（`nameTag`）只在該行有說話者時出現。
-  - 刪除 `byVoice` 依說話者上色；不做依人名自動配色。
 - localStorage 鍵名由 `harumatope_*` 改為本站前綴，避免與 hrmtp 同源時互相覆蓋。
 
 ## 加入新影片的流程（由 Claude 執行）
@@ -90,8 +86,7 @@ youtube: "https://www.youtube.com/watch?v=BTraK6PHUp0"
 
 ## 部署
 
-與 hrmtp／jurii 一致：GitHub Pages 靜態匯出（`output: 'export'`、`basePath`、`images.unoptimized`）。repo 名稱放在 `next.config.ts` 的單一常數，使用者決定後再填；在那之前只做本機預覽。
-`robots` 沿用 `noindex`（個人收藏，不收錄）。
+只做本機版：`dev_archive.bat`（port 3200）。不含 GitHub Pages；`robots` 維持 `noindex`。
 
 ## 已知限制
 
