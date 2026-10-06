@@ -1,8 +1,13 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
-import { getVideo } from '@/lib/videos';
+import { getAllVideoIds, getVideo } from '@/lib/videos';
 import TranscriptMode from '@/components/TranscriptMode';
+
+// 靜態輸出（GitHub Pages）要在建置時列出所有 /videos/<id>
+export function generateStaticParams() {
+  return getAllVideoIds().map((id) => ({ id }));
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const video = getVideo((await params).id);

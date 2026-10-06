@@ -14,6 +14,7 @@ hrmtp 以「第 N 回」分集；本站改以**資料夾**分類（例：`賽馬
 2. 首頁可依資料夾切換。
 3. 詳情頁內嵌播放器，影片上疊中文字幕，逐字稿可點時間跳轉。
 4. 本機 `npm run dev` 可預覽；`npm run build` 通過。
+5. push 到 `main` 後，GitHub Pages（`https://jruei.github.io/Archive-MA/`）自動更新。
 
 ## 範圍
 
@@ -88,7 +89,11 @@ youtube: "https://www.youtube.com/watch?v=BTraK6PHUp0"
 
 ## 部署
 
-只做本機版：`dev_archive.bat`（port 3200）。不含 GitHub Pages；`robots` 維持 `noindex`。
+- 本機：`dev_archive.bat`（port 3200）。
+- 線上：GitHub Pages `https://jruei.github.io/Archive-MA/`，沿用 Archive-HRMTP／Archive-Jurii 的做法（公開 repo、Actions 部署）。push 到 `main` 後由 `.github/workflows/deploy.yml` 建置。
+- `next.config.ts` 只在 GitHub Actions（`GITHUB_ACTIONS`）下改成 `output: "export"`、`basePath: /Archive-MA`、`trailingSlash`，本機 dev／build 不受影響。`/videos/[id]` 用 `generateStaticParams` 在建置時列出所有影片，所以新增影片要 commit + push 才會上線。
+- 本機模擬線上：`GITHUB_ACTIONS=true npm run build`，產出 `out/`，要掛在 `/Archive-MA/` 底下才開得起來。
+- `robots` 維持 `noindex`。字幕疊層預設關閉，新裝置要按一次「字幕」開關，設定記在該瀏覽器的 localStorage。
 
 ## 已知限制
 
