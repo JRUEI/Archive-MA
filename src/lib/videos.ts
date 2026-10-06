@@ -11,6 +11,8 @@ export interface TranscriptLine {
   time: string;
   /** 檔案裡的時間（可到 0.1 秒），字幕疊層與播放同步看這個 */
   seconds: number;
+  /** [起-訖] 寫了訖才有：這行字幕顯示到幾秒；沒寫就由字數估 */
+  end?: number;
   text: string;
 }
 
@@ -27,8 +29,8 @@ export interface VideoData extends VideoListItem {
   transcript: TranscriptLine[];
 }
 
-// [mm:ss.d]：小數可有可無，time 只取整秒那段
-const LINE = /^\[((\d{2}:\d{2}(?::\d{2})?)(?:\.\d)?)\]\s*(.+)$/;
+// [mm:ss.d] 或 [mm:ss.d-mm:ss.d]：小數可有可無，time 只取起點的整秒那段
+const LINE = /^\[((\d{2}:\d{2}(?::\d{2})?)(?:\.\d)?)(?:-(\d{2}:\d{2}(?::\d{2})?(?:\.\d)?))?\]\s*(.+)$/;
 const toSeconds = (time: string) => time.split(':').map(Number).reduce((a, n) => a * 60 + n, 0);
 
 function videoFileNames() {
@@ -48,7 +50,14 @@ export function getVideo(id: string): VideoData | null {
   const transcript: TranscriptLine[] = [];
   for (const line of content.split('\n')) {
     const match = line.trim().match(LINE);
-    if (match) transcript.push({ time: match[2], seconds: toSeconds(match[1]), text: match[3] });
+    if (match) {
+      transcript.push({
+        time: match[2],
+        seconds: toSeconds(match[1]),
+        ...(match[3] && { end: toSeconds(match[3]) }),
+        text: match[4],
+      });
+    }
   }
 
   return {

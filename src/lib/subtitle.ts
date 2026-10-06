@@ -115,7 +115,7 @@ export function balanceQuotes(texts: readonly string[], speakers: readonly strin
   });
 }
 
-/** 字幕結束時間：字越多停越久（夾在 2 到 6 秒），而且不會蓋到下一列 */
+/** 沒寫結束時間時的估法：字越多停越久（夾在 2 到 6 秒），而且不會蓋到下一列 */
 export function subtitleEnd(start: number, text: string, nextStart: number): number {
   const chars = text.replace(/\s/g, '').length;
   return Math.min(nextStart, start + Math.min(6, Math.max(2, 1.2 + 0.28 * chars)));
@@ -128,13 +128,20 @@ export interface SubtitleRow {
   text: string;
 }
 
-export function buildSubtitleRows(lines: readonly { seconds: number; text: string }[]): SubtitleRow[] {
+/** 有寫結束時間（[起-訖]）就照寫的，一樣不蓋到下一列；沒寫、或訖不比起晚（寫壞了），改用字數估 */
+export function buildSubtitleRows(lines: readonly { seconds: number; end?: number; text: string }[]): SubtitleRow[] {
   const texts = balanceQuotes(lines.map(line => line.text));
-  return lines.map((line, i) => ({
-    start: line.seconds,
-    end: subtitleEnd(line.seconds, line.text, i + 1 < lines.length ? lines[i + 1].seconds : Infinity),
-    text: texts[i],
-  }));
+  return lines.map((line, i) => {
+    const nextStart = i + 1 < lines.length ? lines[i + 1].seconds : Infinity;
+    return {
+      start: line.seconds,
+      end:
+        line.end !== undefined && line.end > line.seconds
+          ? Math.min(nextStart, line.end)
+          : subtitleEnd(line.seconds, line.text, nextStart),
+      text: texts[i],
+    };
+  });
 }
 
 /** 二分查找 t 這個時間該顯示哪一列；還沒開始、或已經過了結束時間就回 -1 */

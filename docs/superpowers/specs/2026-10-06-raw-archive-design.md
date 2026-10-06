@@ -44,12 +44,13 @@ youtube: "https://www.youtube.com/watch?v=BTraK6PHUp0"
 ---
 
 ## 【完整逐字稿】
-[00:03.2] 中文字幕
-[00:07.5] 中文字幕
+[00:03.2-00:06.9] 中文字幕
+[00:07.5-00:10.1] 中文字幕
 ```
 
 - `title`：原標題（oEmbed 取得）。`date`：影片發布日（`yt-dlp` 取得）。
 - 逐字稿行格式沿用 hrmtp 解析器：`[mm:ss.d] 內容`；**不設說話者欄位**，站上任何地方都不顯示人名。
+- 訖時間可有可無：`[mm:ss.d-mm:ss.d] 內容` 的字幕照寫的顯示（不蓋到下一行）；沒寫訖就依字數估（2–6 秒）。點時間跳轉與逐字稿列表只看起點。
 - 資料夾不另設設定檔，由各檔 `folder` 值自動彙整。
 - 檔名即 ID，也是詳情頁路由 `/videos/<id>`。
 
@@ -75,11 +76,12 @@ youtube: "https://www.youtube.com/watch?v=BTraK6PHUp0"
 2. `yt-dlp` 取得發布日與日文字幕；oEmbed 取得標題、頻道。
 3. 日文字幕翻成繁體中文，沿用 hrmtp 的 `docs/subtitle-workflow.md` 規則（時間碼逐列照抄、不增刪列、每視覺行約 20 字）。
 4. 寫入 `content/videos/<id>.md`，執行 `npm run validate:content`。
+   - 想讓字幕停留時間貼著實際說話：用日文自動字幕（`ja-orig`）跑 `scripts/retime-subtitles.mjs`，把只有起點的逐字稿改成 `[起-訖]`（長行順便切短、字不改；用法見腳本開頭）。
 5. 使用者在本機預覽確認。
 
 ## 驗證
 
-- `scripts/validate-content.mjs`（由 hrmtp 版精簡）：frontmatter 必填欄位（`title`、`channel`、`folder`、`date`、`youtube`）、`youtube` 能解析出 11 碼 ID 且與檔名一致、逐字稿時間不倒退且行數大於 0。失敗則 build 失敗。
+- `scripts/validate-content.mjs`（由 hrmtp 版精簡）：frontmatter 必填欄位（`title`、`channel`、`folder`、`date`、`youtube`）、`youtube` 能解析出 11 碼 ID 且與檔名一致、逐字稿時間不倒退且行數大於 0；有寫訖的行，訖要晚於起、且不晚於下一行起點。失敗則 build 失敗。
 - `npm run lint`、`npm run typecheck`、`npm run build`。
 - 瀏覽器實測：首頁資料夾切換、封面載入與退回、詳情頁播放與字幕同步、深淺主題、手機寬度。
 - 依 CLAUDE.md，UI 完成前要通過 `visual-alignment` 檢查。

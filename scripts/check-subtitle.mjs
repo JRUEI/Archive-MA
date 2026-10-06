@@ -70,6 +70,20 @@ at(30.5, 3, '下一列接手');
 at(99, -1, '最後一列之後');
 assert.equal(rowAt([], 5), -1, '沒有字幕');
 
+// ── 有寫結束時間（[起-訖]）：照寫的，不蓋到下一列；沒寫或寫壞了退回字數估 ──
+const ranged = buildSubtitleRows([
+  { seconds: 10, end: 14.5, text: '短' }, // 照寫的 4.5 秒，不吃 2 秒下限的公式
+  { seconds: 20, end: 25, text: '二' }, // 寫到 25，但下一列 22 就開始
+  { seconds: 22, text: '沒寫訖' }, // 沒寫：3 字 2.04 秒
+  { seconds: 30, end: 30, text: '訖等於起' }, // 寫壞（訖 ≤ 起）：退回字數估，4 字 2.32 秒
+]);
+close(ranged[0].end, 14.5);
+close(ranged[1].end, 22);
+close(ranged[2].end, 24.04);
+close(ranged[3].end, 32.32);
+assert.equal(rowAt(ranged, 14.49), 0, '寫的訖之前還在');
+assert.equal(rowAt(ranged, 14.5), -1, '寫的訖一到就收');
+
 // ── 存檔讀回 ──
 assert.deepEqual(parseSubtitleState(null), DEFAULT_SUBTITLE_STATE, '沒存過');
 assert.deepEqual(parseSubtitleState('{不是 json'), DEFAULT_SUBTITLE_STATE, '壞掉的 JSON');
