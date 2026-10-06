@@ -518,6 +518,8 @@ export default function TranscriptMode({ video }: { video: VideoData }) {
               onChange={handleSubtitleChange}
               groupOn={showGroupCard}
               onGroupChange={handleGroupCardChange}
+              groupSize={groupSize}
+              onGroupSizeChange={handleSetGroupSize}
               onSkip={seekBy}
             >
               <button
@@ -583,7 +585,6 @@ export default function TranscriptMode({ video }: { video: VideoData }) {
                 <span className="w-2 h-2 rounded-full bg-accent animate-ping"></span>
                 <span className="max-[440px]:sr-only">即時字幕群</span><span className="max-sm:hidden">（{groupSize} 句同步）</span>
               </span>
-              {/* 手機只留標題和按鈕一排；句數按鈕本身就看得出目前幾句 */}
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
                   type="button"
@@ -598,27 +599,6 @@ export default function TranscriptMode({ video }: { video: VideoData }) {
                   <span className="max-sm:hidden">時間</span>
                   <SwitchTrack on={showTime} />
                 </button>
-                <span className="max-sm:hidden text-[13px] text-zinc-500 dark:text-zinc-400">顯示句數：</span>
-                <div className="inline-flex bg-zinc-100 dark:bg-zinc-800 p-0.5 rounded-lg border border-zinc-200 dark:border-zinc-700/60">
-                  {[1, 2, 3, 4, 5].map((num) => (
-                    <button
-                      key={num}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSetGroupSize(num);
-                      }}
-                      className={`px-2 py-0.5 rounded-md font-mono text-xs font-bold transition-all ${
-                        groupSize === num
-                          ? `${SOLID_ACCENT} shadow-sm`
-                          : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-                      }`}
-                      title={`字幕群顯示 ${num} 句`}
-                    >
-                      {num}句
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
 

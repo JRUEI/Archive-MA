@@ -82,6 +82,8 @@ export default function SubtitleToolbar({
   onChange,
   groupOn,
   onGroupChange,
+  groupSize,
+  onGroupSizeChange,
   onSkip,
   children,
 }: {
@@ -92,6 +94,9 @@ export default function SubtitleToolbar({
   /** 影片下方「即時字幕群」卡片的開關，狀態在上層 */
   groupOn: boolean;
   onGroupChange: (on: boolean) => void;
+  /** 即時字幕群一次顯示幾句（1~5），狀態在上層 */
+  groupSize: number;
+  onGroupSizeChange: (n: number) => void;
   /** 倒退／快轉鈕，傳入要跳的秒數（負為倒退） */
   onSkip: (delta: number) => void;
   /** 設定鈕之後、全螢幕之前多放的按鈕（畫面定位、完整字幕） */
@@ -158,8 +163,30 @@ export default function SubtitleToolbar({
   if (active === 'view') {
     panel = (
       <>
-        <SwitchRow label="影片上的字幕" Icon={Captions} on={on} onClick={() => onChange({ on: !on })} />
-        <SwitchRow label="即時字幕群" Icon={List} on={groupOn} onClick={() => onGroupChange(!groupOn)} />
+        {/* 兩個開關同一列；容器窄到放不下就自己換行 */}
+        <div className="-mx-2 flex flex-wrap gap-x-2">
+          <SwitchRow label="影片上的字幕" Icon={Captions} on={on} onClick={() => onChange({ on: !on })} />
+          <SwitchRow label="即時字幕群" Icon={List} on={groupOn} onClick={() => onGroupChange(!groupOn)} />
+        </div>
+        {groupOn && (
+          <div className="grid grid-cols-[3.4rem_minmax(0,1fr)] items-center gap-2.5 text-[13px]">
+            <span className="font-semibold text-zinc-500 dark:text-zinc-400">句數</span>
+            <div role="group" aria-label="字幕群句數" className="grid grid-cols-5 gap-1">
+              {[1, 2, 3, 4, 5].map(n => (
+                <button
+                  key={n}
+                  type="button"
+                  aria-pressed={groupSize === n}
+                  title={`字幕群顯示 ${n} 句`}
+                  onClick={() => onGroupSizeChange(n)}
+                  className="h-8 rounded-[10px] border border-transparent font-bold text-zinc-500 transition dark:text-zinc-400 hover:bg-accent/10 aria-pressed:border-accent/25 aria-pressed:bg-accent/10 aria-pressed:text-red-700 dark:aria-pressed:text-accent"
+                >
+                  {n}句
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {on && (
           <div className="grid gap-2.5 border-t border-zinc-200 pt-2.5 dark:border-zinc-800">
             <Slider
@@ -308,7 +335,7 @@ function SwitchRow({ label, Icon, on, onClick }: { label: string; Icon: LucideIc
       role="switch"
       aria-checked={on}
       onClick={onClick}
-      className="flex h-9 items-center gap-2 rounded-[10px] px-2 text-[13px] font-bold text-zinc-700 transition hover:bg-accent/10 dark:text-zinc-200"
+      className="flex h-9 min-w-36 flex-1 items-center gap-2 rounded-[10px] px-2 text-[13px] font-bold text-zinc-700 transition hover:bg-accent/10 dark:text-zinc-200"
     >
       <Icon size={16} aria-hidden="true" className="shrink-0" />
       <span className="flex-1 text-left">{label}</span>
