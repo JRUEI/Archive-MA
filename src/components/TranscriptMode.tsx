@@ -11,7 +11,7 @@ import {
   SUBTITLE_STORAGE_KEY,
   type SubtitleState,
 } from '@/lib/subtitle';
-import { Search, X, FileText, Crosshair, Clock, RectangleHorizontal } from 'lucide-react';
+import { Search, X, FileText, Crosshair, Clock, RectangleHorizontal, Tv } from 'lucide-react';
 import SubtitleOverlay from './SubtitleOverlay';
 import SubtitleToolbar, { BAR_BTN, LABEL, SwitchTrack } from './SubtitleToolbar';
 
@@ -38,6 +38,7 @@ declare global {
 const GROUP_SIZE_KEY = 'rawarchive_groupsize_v1';
 const GROUP_CARD_KEY = 'rawarchive_groupcard_v1';
 const GROUP_TIME_KEY = 'rawarchive_grouptime_v1';
+const THEATER_KEY = 'rawarchive_theater_v1';
 
 /** 實心強調色：#059669／#34d399 上放近黑字（5.3:1／10.4:1），白字只有 3.8:1 */
 const SOLID_ACCENT = 'bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900';
@@ -85,6 +86,39 @@ export default function TranscriptMode({ video }: { video: VideoData }) {
   };
 
   // 字幕群每句前面的時間標，預設開；水合前一樣先照預設畫
+  // 劇院模式：播放器撐到視窗寬（高度不超過視窗），像 YouTube 的 T 鍵
+  const [storedTheater, setStoredTheater] = useState(() => readStoredString(THEATER_KEY) === '1');
+  const theater = hydrated && storedTheater;
+  const toggleTheater = useCallback(() => {
+    setStoredTheater((prev) => {
+      writeStoredString(THEATER_KEY, prev ? '0' : '1');
+      return !prev;
+    });
+  }, []);
+  // 量播放器下方（工具列＋字幕群）的高度，劇院模式據此限制播放器大小，讓「畫面定位」能把整組放進視窗、不吃掉下面
+  useEffect(() => {
+    const stage = theaterRef.current;
+    if (!stage) return;
+    const measure = () => {
+      const end = document.getElementById('transcript-subtitle-group') ?? stage.nextElementSibling;
+      if (end) stage.style.setProperty('--below', `${Math.round(end.getBoundingClientRect().bottom - stage.getBoundingClientRect().bottom)}px`);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    for (const el of [stage.nextElementSibling, document.getElementById('transcript-subtitle-group')]) if (el) ro.observe(el);
+    return () => ro.disconnect();
+  }, [showGroupCard, groupSize, theater]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== 't' || e.ctrlKey || e.metaKey || e.altKey) return;
+      const el = e.target as HTMLElement;
+      if (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+      toggleTheater();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [toggleTheater]);
+
   const [storedShowTime, setStoredShowTime] = useState(() => readStoredString(GROUP_TIME_KEY) !== '0');
   const showTime = hydrated ? storedShowTime : true;
   const handleTimeChange = (on: boolean) => {
@@ -149,36 +183,19 @@ export default function TranscriptMode({ video }: { video: VideoData }) {
     return () => clearTimeout(timer);
   }, [exitSide]);
 
-  // 一鍵平滑滾動畫面：底部對齊字幕群底下 10px，剛好露出上方影片時間軸
+  // 一鍵平滑滾動畫面：播放器＋工具列＋字幕群放得進視窗就整組置中（劇院模式一定放得進）；放不下（一般模式的小視窗）就讓字幕群底部貼齊視窗底，不吃掉下面
   const scrollToTheaterView = useCallback(() => {
     const subtitleEl = document.getElementById('transcript-subtitle-group');
     const playerEl = document.getElementById('transcript-player-stage');
+    if (!playerEl) return;
+    if (!subtitleEl) return playerEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-    if (subtitleEl) {
-      const subtitleRect = subtitleEl.getBoundingClientRect();
-      const subtitleBottom = window.scrollY + subtitleRect.bottom;
-
-      // 定位後的底部對齊字幕群底下 10px (window.scrollY + window.innerHeight = subtitleBottom + 10)
-      let targetScrollY = subtitleBottom + 10 - window.innerHeight;
-
-      // 安全限制：若視窗極高，最多只往上捲至播放器頂部（與 sticky navbar 保持 16px 間隔）
-      if (playerEl) {
-        const playerRect = playerEl.getBoundingClientRect();
-        const playerTop = window.scrollY + playerRect.top;
-        const navbarHeight = 64;
-        const minScrollY = playerTop - navbarHeight - 16;
-        if (targetScrollY < minScrollY) {
-          targetScrollY = minScrollY;
-        }
-      }
-
-      window.scrollTo({
-        top: Math.max(0, targetScrollY),
-        behavior: 'smooth',
-      });
-    } else if (playerEl) {
-      playerEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    const navbarHeight = 64;
+    const top = window.scrollY + playerEl.getBoundingClientRect().top;
+    const bottom = window.scrollY + subtitleEl.getBoundingClientRect().bottom;
+    const slack = window.innerHeight - navbarHeight - (bottom - top);
+    const target = slack >= 0 ? top - navbarHeight - slack / 2 : bottom + 10 - window.innerHeight;
+    window.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
   }, []);
 
   // 逐字稿加上 index（秒數在 markdown.ts 就算好了，可到 0.1 秒）
@@ -430,7 +447,7 @@ export default function TranscriptMode({ video }: { video: VideoData }) {
             <div
               id="transcript-player-stage"
               ref={theaterRef}
-              className={`@container scroll-mt-20 relative w-full aspect-video bg-black rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-2xl [&:fullscreen]:rounded-none [&:fullscreen]:border-0 ${landscape ? 'stage-landscape' : ''}`}
+              className={`@container scroll-mt-20 relative aspect-video bg-black overflow-hidden border-zinc-200 dark:border-zinc-800 shadow-2xl [&:fullscreen]:rounded-none [&:fullscreen]:border-0 ${landscape ? 'stage-landscape' : theater ? 'w-[min(100vw,max(24rem,calc((100dvh-5.5rem-var(--below,22rem))*16/9)))] left-1/2 -translate-x-1/2 border-y' : 'w-full rounded-3xl border'}`}
             >
               <div id="transcript-yt-player" className="w-full h-full"></div>
               {subtitle.on && (
@@ -503,6 +520,17 @@ export default function TranscriptMode({ video }: { video: VideoData }) {
               onGroupChange={handleGroupCardChange}
               onSkip={seekBy}
             >
+              <button
+                type="button"
+                onClick={toggleTheater}
+                aria-pressed={theater}
+                aria-label="劇院模式"
+                title="劇院模式（T）"
+                className={`${BAR_BTN} max-md:hidden`}
+              >
+                <Tv size={16} aria-hidden="true" className="shrink-0" />
+                <span className={LABEL}>劇院模式</span>
+              </button>
               <button
                 type="button"
                 onClick={scrollToTheaterView}

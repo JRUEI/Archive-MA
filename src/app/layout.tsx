@@ -59,7 +59,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Header />
-          <main className="min-h-screen">
+          <main className="min-h-screen overflow-x-clip">
             {children}
           </main>
           <Footer />
