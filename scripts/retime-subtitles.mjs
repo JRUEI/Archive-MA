@@ -1,7 +1,8 @@
 // 用 YouTube 日文自動字幕（每個詞／句有起點）替中文字幕算出「實際說話的起訖」：
-//   node scripts/retime-subtitles.mjs content/videos/<ID>.md <ID>.ja-orig.json3 [--dry]
+//   node scripts/retime-subtitles.mjs content/videos/<ID>.md <ID>.ja-orig.json3 [--dry | --scan]
 // 日文檔：yt-dlp --skip-download --write-auto-subs --sub-langs ja-orig --sub-format json3 -o "%(id)s" <影片網址>
 // 輸入是只有起點的逐字稿 [mm:ss.d] 中文；輸出 [起-訖] 中文。字一個都不改，--dry 只印報告不寫檔。
+// --scan：只檢查「可疑併塊」（見 suspects），已校時的稿也能跑，不改檔。有 ⚠ 的地方起點不可信，上線前要對畫面／聽音檔。
 //
 // 1. 太長的行（> MAX 字）在 。？！ 切，不夠再在 ，、 切
 // 2. 切點對到日文：先依字數比例估時間，再貼到附近的日文標點／停頓
@@ -28,6 +29,8 @@ const TOL = 0.25; //     中文行起點與日文 seg 起點最多差幾秒還�
 const SNAP = 1.5; //     切點最多往日文標點／停頓靠幾秒
 const PAUSE = 1.2; //    日文停頓超過這麼久，後面接著說的話不算這一行的（多半是沒翻的附和／另一句），不拿來拉長這一行
 const COVER = 1.2; //    但停頓前已說的日文字數要 ≥ 這行中文字數 × COVER 才算斷（日文／中文字數比中位數 1.4，1.2 約第 25 百分位）；不夠多半是自動字幕漏了幾個詞
+const SLACK = 5; //      併塊的起點到下一個詞之間，扣掉照 POS 語速說完所需時間後還剩幾秒以上，就算起點可疑
+const MIN_CHUNK = 15; // 太短的 seg（「はい」）起點多半是對的，不查
 const GAP = 0.3; //      相鄰兩行起點至少隔幾秒
 
 const jlen = (s) => s.replace(/\[[^\]]*\]|[\s。、，！？!?.,…]/g, '').length; // [音楽] 之類不算字
@@ -87,6 +90,16 @@ const loadSegs = (file) =>
   JSON.parse(fs.readFileSync(file, 'utf8')).events.flatMap((ev) =>
     (ev.segs ?? []).map((sg) => ({ t: (ev.tStartMs + (sg.tOffsetMs ?? 0)) / 1000, text: sg.utf8 ?? '', n: jlen(sg.utf8 ?? '') })),
   ).filter((sg) => sg.n);
+
+// 可疑併塊：自動字幕有時把一長段話併成一個 seg，起點只是「前一個辨識到的聲音」之後，真正開口可能晚很多
+// （BTraK6PHUp0 36:26.8：現場在笑，受訪旁白 36:40 才開始，整段中文早了 12 秒）。
+// 說話落在 [起點, 下一個詞) 這段空檔的哪裡無從得知，只能標出來叫人去對畫面。
+export const suspects = (segs) =>
+  segs.flatMap((s, i) => {
+    const next = segs[i + 1]?.t;
+    const slack = next === undefined ? 0 : next - s.t - s.n * POS;
+    return s.n >= MIN_CHUNK && slack > SLACK ? [{ ...s, next, slack }] : [];
+  });
 
 // 一個 chunk = 一個錨點行＋緊接著對不上日文的續行。回傳每個小段的 {S 起, E 說完}
 function place(pieces, anchorT, spanEnd, atoms) {
@@ -206,29 +219,42 @@ export function retime(lines, atoms) {
   assert(out.map((p) => p.text).join('|') === '很長的句子，還有後半。|（笑）|下一句。', '順序錯了');
   assert(out[0].s === 10 && out[1].s > 11 && out[1].s >= 10 + 22 * POS && out[2].s === 20, '（笑）應等前一句說完才出現');
   assert(out.every((p, j) => p.e > p.s && (!out[j + 1] || p.e <= out[j + 1].s)), '起訖不單調');
+  const sus = suspects([{ t: 0, n: 98 }, { t: 30, n: 3 }, { t: 33, n: 40 }, { t: 40, n: 3 }].map((x) => ({ text: '', ...x })));
+  assert(sus.length === 1 && sus[0].t === 0, '可疑併塊：98 字佔 30 秒要標，40 字佔 7 秒不標');
 }
 
 if (process.argv[1]?.endsWith('retime-subtitles.mjs')) {
   const [mdPath, jsonPath] = process.argv.slice(2).filter((a) => !a.startsWith('--'));
-  if (!mdPath || !jsonPath) throw new Error('用法：node scripts/retime-subtitles.mjs <影片.md> <ja-orig.json3> [--dry]');
+  if (!mdPath || !jsonPath) throw new Error('用法：node scripts/retime-subtitles.mjs <影片.md> <ja-orig.json3> [--dry | --scan]');
   const raw = fs.readFileSync(mdPath, 'utf8').split(/\r?\n/);
   const hit = raw.map((l, i) => ({ i, m: l.trim().match(LINE) })).filter((r) => r.m);
   assert(hit.length, '找不到 [mm:ss.d] 逐字稿行');
-  assert(!hit.some(({ m }) => m[3]), '已經有 -訖 了（校時過）；請從只有起點的逐字稿重跑，例如 git 歷史裡的舊版');
-  const between = raw.slice(hit[0].i, hit.at(-1).i + 1).filter((l) => l.trim() && !LINE.test(l.trim()));
-  assert(!between.length, `逐字稿中間夾了非時間行：${between[0]}`);
   const lines = hit.map(({ m }) => ({ t: sec(m[1], m[2]), text: m[4].trim() }));
+  const segs = loadSegs(jsonPath);
 
-  const pieces = retime(lines, atomsOf(loadSegs(jsonPath)));
-  assert(pieces.map((p) => p.text).join('') === lines.map((l) => l.text).join(''), '字被改到了');
+  const sus = suspects(segs);
+  for (const s of sus) {
+    const mine = lines.filter((l) => l.t >= s.t - 0.5 && l.t < s.next);
+    console.log(`⚠ ${stamp(s.t)} 起一整塊 ${s.n} 字，${stamp(s.next)} 才有下一個詞（多出 ${s.slack.toFixed(0)} 秒空檔）：起點不可信；中文 ${mine.length} 行「${mine[0]?.text.slice(0, 12) ?? ''}…」→ 對畫面／聽音檔`);
+  }
+  console.log(sus.length ? `共 ${sus.length} 處可疑併塊` : '沒有可疑併塊');
 
-  const lagged = pieces.filter((p) => p.s - p.S > 0.05);
-  const fast = pieces.filter((p) => p.c / (p.e - p.s) > CPS_MAX);
-  const tight = pieces.filter((p) => p.note && p.e - p.s < MIN_ANN - 0.01);
-  console.log(`${lines.length} 行 → ${pieces.length} 行；晚出現 ${lagged.length} 行（最多 ${Math.max(0, ...lagged.map((p) => p.s - p.S)).toFixed(1)} 秒）；讀太快（> ${CPS_MAX} 字/秒）${fast.length} 行；標註擠到不足 ${MIN_ANN} 秒 ${tight.length} 行`);
-  for (const p of [...fast, ...tight]) console.log(`  ${stamp(p.s)}-${stamp(p.e)} ${p.text.slice(0, 30)}`);
-  if (!process.argv.includes('--dry')) {
-    const body = pieces.map((p) => `[${stamp(p.s)}-${stamp(p.e)}] ${p.text}`);
-    fs.writeFileSync(mdPath, [...raw.slice(0, hit[0].i), ...body, ...raw.slice(hit.at(-1).i + 1)].join('\n'));
+  if (!process.argv.includes('--scan')) {
+    assert(!hit.some(({ m }) => m[3]), '已經有 -訖 了（校時過）；請從只有起點的逐字稿重跑，例如 git 歷史裡的舊版（只想檢查可疑併塊就加 --scan）');
+    const between = raw.slice(hit[0].i, hit.at(-1).i + 1).filter((l) => l.trim() && !LINE.test(l.trim()));
+    assert(!between.length, `逐字稿中間夾了非時間行：${between[0]}`);
+
+    const pieces = retime(lines, atomsOf(segs));
+    assert(pieces.map((p) => p.text).join('') === lines.map((l) => l.text).join(''), '字被改到了');
+
+    const lagged = pieces.filter((p) => p.s - p.S > 0.05);
+    const fast = pieces.filter((p) => p.c / (p.e - p.s) > CPS_MAX);
+    const tight = pieces.filter((p) => p.note && p.e - p.s < MIN_ANN - 0.01);
+    console.log(`${lines.length} 行 → ${pieces.length} 行；晚出現 ${lagged.length} 行（最多 ${Math.max(0, ...lagged.map((p) => p.s - p.S)).toFixed(1)} 秒）；讀太快（> ${CPS_MAX} 字/秒）${fast.length} 行；標註擠到不足 ${MIN_ANN} 秒 ${tight.length} 行`);
+    for (const p of [...fast, ...tight]) console.log(`  ${stamp(p.s)}-${stamp(p.e)} ${p.text.slice(0, 30)}`);
+    if (!process.argv.includes('--dry')) {
+      const body = pieces.map((p) => `[${stamp(p.s)}-${stamp(p.e)}] ${p.text}`);
+      fs.writeFileSync(mdPath, [...raw.slice(0, hit[0].i), ...body, ...raw.slice(hit.at(-1).i + 1)].join('\n'));
+    }
   }
 }
