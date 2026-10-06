@@ -33,7 +33,7 @@ export const SUBTITLE_DEFAULT_STYLE: SubtitleStyle = { sb: 13, sf: 4.4, sw: 700 
 
 /** [最小, 最大, 間距]：滑桿與讀回存檔時的夾限共用同一份 */
 export const SUBTITLE_RANGE = {
-  sb: [3, 45, 0.5],
+  sb: [0, 45, 0.5],
   sf: [2.5, 8, 0.1],
   sw: [400, 900, 100],
   offset: [-500, 800, 10],

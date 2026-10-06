@@ -7,6 +7,7 @@ import {
   Captions,
   CaseSensitive,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   List,
@@ -15,7 +16,6 @@ import {
   MoveVertical,
   Pin,
   RotateCcw,
-  SlidersHorizontal,
   Star,
   Timer,
   type LucideIcon,
@@ -30,11 +30,11 @@ import {
 
 const SKIP_SECONDS = 5;
 
-type Tool = 'style' | 'offset' | 'slots';
+type Tool = 'view' | 'offset' | 'slots';
 type Change = (patch: Partial<SubtitleState>) => void;
 
 const TOOLS: { id: Tool; name: string; Icon: LucideIcon }[] = [
-  { id: 'style', name: '樣式', Icon: SlidersHorizontal },
+  { id: 'view', name: '字幕', Icon: Captions },
   { id: 'offset', name: '延遲', Icon: Timer },
   { id: 'slots', name: '快捷', Icon: Star },
 ];
@@ -45,9 +45,6 @@ const TOOLS: { id: Tool; name: string; Icon: LucideIcon }[] = [
 export const BAR_BTN =
   'inline-flex h-8 min-w-6 flex-[0_1_36px] items-center justify-center gap-1 rounded-[10px] border border-transparent text-[13px] font-bold text-zinc-500 transition dark:text-zinc-400 enabled:hover:bg-accent/10 aria-expanded:border-accent/25 aria-expanded:bg-accent/10 aria-expanded:text-red-700 dark:aria-expanded:text-accent aria-pressed:border-accent/25 aria-pressed:bg-accent/10 aria-pressed:text-red-700 dark:aria-pressed:text-accent disabled:cursor-not-allowed disabled:opacity-40 @min-[808px]:flex-none @min-[808px]:px-1.5';
 export const LABEL = 'hidden @min-[808px]:inline';
-const SWITCH_BTN =
-  'inline-flex h-8 shrink-0 items-center gap-1 rounded-[10px] px-1 text-[13px] font-bold text-zinc-700 transition hover:bg-accent/10 dark:text-zinc-200 @min-[808px]:gap-1.5 @min-[808px]:px-2';
-
 /* 軌道 flex + items-center，白球由 flex 垂直置中（不靠 top 手算）；開時右移 = 軌道寬 32 − 左右內距各 2 − 球 14 = 14px（translate-x-3.5）。
    開的軌道兩種主題都用 red-600：白球對它 3.8:1；深色的 accent 太亮，白球只剩 1.9:1 */
 export function SwitchTrack({ on }: { on: boolean }) {
@@ -75,7 +72,7 @@ const describeOffset = (ms: number) => `${ms > 0 ? '提前' : '延後'} ${(Math.
 const formatOffset = (ms: number) => (ms === 0 ? '0 秒' : describeOffset(ms));
 
 /**
- * 影片下面的工具列：字幕開關、字幕群開關、倒退／快轉、三個字幕設定鈕、上層塞進來的按鈕、全螢幕。
+ * 影片下面的工具列：「字幕」選單（影片字幕＋即時字幕群開關，開著字幕時接樣式滑桿）、倒退／快轉、延遲與快捷兩個設定鈕、上層塞進來的按鈕、全螢幕。
  * 設定鈕各開一個小浮層（absolute，不推擠頁面）；一次只開一個。
  * 狀態與存檔都在上層，這裡只負責畫面。
  */
@@ -107,8 +104,8 @@ export default function SubtitleToolbar({
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<Partial<Record<Tool, HTMLButtonElement | null>>>({});
-  // 字幕關掉時設定鈕都停用，浮層也一併收起
-  const active = on ? open : null;
+  // 「字幕」選單不受字幕開關影響；字幕關掉時其他設定鈕都停用，浮層也一併收起
+  const active = open === 'view' || on ? open : null;
 
   useEffect(() => {
     if (!active) return;
@@ -158,27 +155,33 @@ export default function SubtitleToolbar({
   const setStyle = (patch: Partial<SubtitleStyle>) => onChange({ cur: { ...cur, ...patch } });
 
   let panel: ReactNode = null;
-  if (active === 'style') {
+  if (active === 'view') {
     panel = (
       <>
-        <Slider
-          label="位置"
-          Icon={MoveVertical}
-          value={cur.sb}
-          range={SUBTITLE_RANGE.sb}
-          format={v => `${v}%`}
-          onChange={sb => setStyle({ sb })}
-        />
-        <Slider
-          label="字號"
-          Icon={CaseSensitive}
-          value={cur.sf}
-          range={SUBTITLE_RANGE.sf}
-          format={v => v.toFixed(1)}
-          onChange={sf => setStyle({ sf })}
-        />
-        <Slider label="粗細" Icon={Bold} value={cur.sw} range={SUBTITLE_RANGE.sw} format={String} onChange={sw => setStyle({ sw })} />
-        <SaveSlot state={state} onChange={onChange} />
+        <SwitchRow label="影片上的字幕" Icon={Captions} on={on} onClick={() => onChange({ on: !on })} />
+        <SwitchRow label="即時字幕群" Icon={List} on={groupOn} onClick={() => onGroupChange(!groupOn)} />
+        {on && (
+          <div className="grid gap-2.5 border-t border-zinc-200 pt-2.5 dark:border-zinc-800">
+            <Slider
+              label="位置"
+              Icon={MoveVertical}
+              value={cur.sb}
+              range={SUBTITLE_RANGE.sb}
+              format={v => `${v}%`}
+              onChange={sb => setStyle({ sb })}
+            />
+            <Slider
+              label="字號"
+              Icon={CaseSensitive}
+              value={cur.sf}
+              range={SUBTITLE_RANGE.sf}
+              format={v => v.toFixed(1)}
+              onChange={sf => setStyle({ sf })}
+            />
+            <Slider label="粗細" Icon={Bold} value={cur.sw} range={SUBTITLE_RANGE.sw} format={String} onChange={sw => setStyle({ sw })} />
+            <SaveSlot state={state} onChange={onChange} />
+          </div>
+        )}
       </>
     );
   } else if (active === 'offset') {
@@ -209,33 +212,20 @@ export default function SubtitleToolbar({
       <div className="rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div role="group" aria-label="播放控制" className="flex h-11 items-center px-1 @min-[808px]:gap-0.5">
           <button
-            type="button"
-            role="switch"
-            aria-checked={on}
-            aria-label="字幕"
-            onClick={() => {
-              setOpen(null);
-              onChange({ on: !on });
+            ref={el => {
+              buttonRefs.current.view = el;
             }}
-            className={SWITCH_BTN}
-          >
-            <Captions size={16} aria-hidden="true" />
-            <span className={LABEL}>字幕</span>
-            <SwitchTrack on={on} />
-          </button>
-          {/* 影片下方卡片的開關，跟「字幕」同一款滑動開關 */}
-          <button
             type="button"
-            role="switch"
-            aria-checked={groupOn}
-            aria-label="即時字幕群"
-            title="顯示／隱藏影片下方的即時字幕群"
-            onClick={() => onGroupChange(!groupOn)}
-            className={SWITCH_BTN}
+            aria-label="字幕"
+            title="字幕、即時字幕群、樣式"
+            aria-expanded={active === 'view'}
+            aria-controls={`${uid}-view`}
+            onClick={() => setOpen(active === 'view' ? null : 'view')}
+            className={`${BAR_BTN} flex-none px-1.5`}
           >
-            <List size={16} aria-hidden="true" />
-            <span className={LABEL}>字幕群</span>
-            <SwitchTrack on={groupOn} />
+            <Captions size={16} aria-hidden="true" className="shrink-0" />
+            <span className={LABEL}>字幕</span>
+            <ChevronDown size={14} aria-hidden="true" className="shrink-0" />
           </button>
 
           <span className="min-w-0 flex-1" />
@@ -252,7 +242,7 @@ export default function SubtitleToolbar({
 
           <span className="min-w-0 flex-1" />
 
-          {TOOLS.map(({ id, name, Icon }) => (
+          {TOOLS.filter(t => t.id !== 'view').map(({ id, name, Icon }) => (
             <button
               key={id}
               ref={el => {
@@ -301,12 +291,29 @@ export default function SubtitleToolbar({
           id={`${uid}-${active}`}
           role="group"
           aria-label={`${TOOLS.find(t => t.id === active)?.name}設定`}
-          className="absolute left-0 top-[calc(100%+1rem)] z-[45] scroll-mb-4 grid w-[min(100%,26rem)] gap-2.5 rounded-2xl border border-zinc-200 bg-white p-3 shadow-xl dark:border-zinc-800 dark:bg-zinc-900"
+          className={`absolute left-0 top-[calc(100%+1rem)] z-[45] scroll-mb-4 grid gap-2.5 rounded-2xl border border-zinc-200 bg-white p-3 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 w-[min(100%,26rem)]`}
         >
           {panel}
         </div>
       )}
     </div>
+  );
+}
+
+/** 「字幕」選單裡的一列：圖示＋名稱＋滑動開關 */
+function SwitchRow({ label, Icon, on, onClick }: { label: string; Icon: LucideIcon; on: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={onClick}
+      className="flex h-9 items-center gap-2 rounded-[10px] px-2 text-[13px] font-bold text-zinc-700 transition hover:bg-accent/10 dark:text-zinc-200"
+    >
+      <Icon size={16} aria-hidden="true" className="shrink-0" />
+      <span className="flex-1 text-left">{label}</span>
+      <SwitchTrack on={on} />
+    </button>
   );
 }
 
