@@ -447,7 +447,7 @@ export default function TranscriptMode({ video }: { video: VideoData }) {
             <div
               id="transcript-player-stage"
               ref={theaterRef}
-              className={`@container scroll-mt-20 relative aspect-video bg-black overflow-hidden border-zinc-200 dark:border-zinc-800 shadow-2xl [&:fullscreen]:rounded-none [&:fullscreen]:border-0 ${landscape ? 'stage-landscape' : theater ? 'w-[min(100vw,max(24rem,calc((100dvh-5.5rem-var(--below,22rem))*16/9)))] left-1/2 -translate-x-1/2 border-y' : 'w-full rounded-3xl border'}`}
+              className={`@container scroll-mt-20 relative aspect-video bg-black overflow-hidden border-zinc-200 dark:border-zinc-800 shadow-2xl [&:fullscreen]:rounded-none [&:fullscreen]:border-0 [&:fullscreen]:translate-x-0 ${landscape ? 'stage-landscape' : theater ? 'w-[min(100vw,max(24rem,calc((100dvh-5.5rem-var(--below,22rem))*16/9)))] left-1/2 -translate-x-1/2 border-y' : 'w-full rounded-3xl border'}`}
             >
               <div id="transcript-yt-player" className="w-full h-full"></div>
               {subtitle.on && (
