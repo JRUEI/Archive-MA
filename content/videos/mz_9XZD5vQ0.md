@@ -1,7 +1,7 @@
 ---
 title: "『真名瀬日和の「日和の間」』第9回【ゲスト：久保田未夢】（2026年8月2日放送）"
 channel: "VoRaDi"
-folder: "賽馬娘"
+folder: "聲優廣播"
 date: "2026-08-02"
 youtube: "https://www.youtube.com/watch?v=mz_9XZD5vQ0"
 ---
