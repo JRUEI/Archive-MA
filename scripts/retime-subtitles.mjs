@@ -245,7 +245,9 @@ if (process.argv[1]?.endsWith('retime-subtitles.mjs')) {
     assert(!between.length, `逐字稿中間夾了非時間行：${between[0]}`);
 
     const pieces = retime(lines, atomsOf(segs));
-    assert(pieces.map((p) => p.text).join('') === lines.map((l) => l.text).join(''), '字被改到了');
+    // 標註（笑）可能被排到被切開的長行中間，所以對話文字與標註分開比
+    const same = (xs, pick) => xs.filter(pick).map((x) => x.text).join('');
+    assert(same(pieces, (p) => !p.note) === same(lines, (l) => !isNote(l.text)) && [...same(pieces, (p) => p.note)].sort().join('') === [...same(lines, (l) => isNote(l.text))].sort().join(''), '字被改到了');
 
     const lagged = pieces.filter((p) => p.s - p.S > 0.05);
     const fast = pieces.filter((p) => p.c / (p.e - p.s) > CPS_MAX);
