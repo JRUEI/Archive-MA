@@ -86,7 +86,7 @@ export default function TranscriptMode({ video }: { video: VideoData }) {
   };
 
   // 字幕群每句前面的時間標，預設開；水合前一樣先照預設畫
-  // 劇院模式：播放器撐到視窗寬（高度不超過視窗），像 YouTube 的 T 鍵
+  // 劇院模式：播放器撐到視窗寬（高度不超過視窗），像 YouTube 的 T 鍵；至少跟一般模式一樣寬，字幕群很高時不會反而變小
   const [storedTheater, setStoredTheater] = useState(() => readStoredString(THEATER_KEY) === '1');
   const theater = hydrated && storedTheater;
   const toggleTheater = useCallback(() => {
@@ -183,7 +183,7 @@ export default function TranscriptMode({ video }: { video: VideoData }) {
     return () => clearTimeout(timer);
   }, [exitSide]);
 
-  // 一鍵平滑滾動畫面：播放器＋工具列＋字幕群放得進視窗就整組置中（劇院模式一定放得進）；放不下（一般模式的小視窗）就讓字幕群底部貼齊視窗底，不吃掉下面
+  // 一鍵平滑滾動畫面：播放器＋工具列＋字幕群放得進視窗就整組置中；放不下（小視窗、字幕群很高）就讓字幕群底部貼齊視窗底，不吃掉下面
   const scrollToTheaterView = useCallback(() => {
     const subtitleEl = document.getElementById('transcript-subtitle-group');
     const playerEl = document.getElementById('transcript-player-stage');
@@ -447,7 +447,7 @@ export default function TranscriptMode({ video }: { video: VideoData }) {
             <div
               id="transcript-player-stage"
               ref={theaterRef}
-              className={`@container scroll-mt-20 relative aspect-video bg-black overflow-hidden border-zinc-200 dark:border-zinc-800 shadow-2xl [&:fullscreen]:rounded-none [&:fullscreen]:border-0 [&:fullscreen]:translate-x-0 ${landscape ? 'stage-landscape' : theater ? 'w-[min(100vw,max(24rem,calc((100dvh-5.5rem-var(--below,22rem))*16/9)))] left-1/2 -translate-x-1/2 border-y' : 'w-full rounded-3xl border'}`}
+              className={`@container scroll-mt-20 relative aspect-video bg-black overflow-hidden border-zinc-200 dark:border-zinc-800 shadow-2xl [&:fullscreen]:rounded-none [&:fullscreen]:border-0 [&:fullscreen]:translate-x-0 ${landscape ? 'stage-landscape' : theater ? 'w-[min(100vw,max(100%,calc((100dvh-5.5rem-var(--below,22rem))*16/9)))] left-1/2 -translate-x-1/2 border-y' : 'w-full rounded-3xl border'}`}
             >
               <div id="transcript-yt-player" className="w-full h-full"></div>
               {subtitle.on && (
