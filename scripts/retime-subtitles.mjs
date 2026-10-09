@@ -21,7 +21,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 // ── 校準用的常數（時間不對就先動這裡）──
-const MAX = 12; //       一列上限：長行切成幾個字以內的小段；--scan、--table 也拿它當「太長」
+export const MAX = 12; //       一列上限：長行切成幾個字以內的小段；--scan、--table 也拿它當「太長」
 const POS = 0.15; //     日文每字幾秒，算「切點在哪」用。取偏快：字幕寧可早一點出現，不要晚
 const SPC = 0.19; //     日文每字幾秒，算「說完了沒」用。實測中位數 0.16，取偏慢：寧可多留，不要話沒說完就收
 const LINGER = 0.4; //   說完後多留幾秒
@@ -42,17 +42,17 @@ const GAP = 0.3; //      相鄰兩行起點至少隔幾秒
 
 const jlen = (s) => s.replace(/\[[^\]]*\]|[\s。、，！？!?.,…]/g, '').length; // [音楽] 之類不算字
 const clen = (s) => s.replace(/\s/g, '').length;
-const bare = (s) => s.replace(/[\s，。、？！；：…—「」『』（）()《》～・,.!?［］\[\]]/g, '').length; // 一列幾個字：標點不算
-const isNote = (s) => /^[（(][^（）()]*[）)]$/.test(s); // （笑）、（尖叫聲）：整行都是標註，沒有對應的日文
+export const bare = (s) => s.replace(/[\s，。、？！；：…—「」『』（）()《》～・,.!?［］\[\]]/g, '').length; // 一列幾個字：標點不算
+export const isNote = (s) => /^[（(][^（）()]*[）)]$/.test(s); // （笑）、（尖叫聲）：整行都是標註，沒有對應的日文
 // 句尾語氣字或標點被擠到下一行開頭（應接回上一行）。不含「嘛」：行首「嘛，」是本站對まあ的譯法
 const orphan = (s) => /^[呢吧嗎啦囉](?:[。？！，、…]|$)/.test(s) || !bare(s);
 const need = (c) => Math.max(MIN_DUR, 0.6 + c / CPS);
 const must = (c) => Math.max(MIN_ABS, 0.4 + c / CPS_MAX);
 const onHead = (heads, t, tol = 0.05) => heads.some((h) => Math.abs(h - t) <= tol); // 時間貼著某個日文 seg 開頭（實測到的開口）
 
-const LINE = /^\[(\d{2}:\d{2}(?::\d{2})?)(?:\.(\d))?(?:-(\d{2}:\d{2}(?::\d{2})?)(?:\.(\d))?)?\]\s*(.+)$/;
-const sec = (hms, d) => hms.split(':').reduce((a, n) => a * 60 + Number(n), 0) + Number(d ?? 0) / 10;
-const stamp = (t) => {
+export const LINE = /^\[(\d{2}:\d{2}(?::\d{2})?)(?:\.(\d))?(?:-(\d{2}:\d{2}(?::\d{2})?)(?:\.(\d))?)?\]\s*(.+)$/;
+export const sec = (hms, d) => hms.split(':').reduce((a, n) => a * 60 + Number(n), 0) + Number(d ?? 0) / 10;
+export const stamp = (t) => {
   const d = Math.round(t * 10);
   const s = Math.floor(d / 10);
   const pad = (n) => String(n).padStart(2, '0');
@@ -97,7 +97,7 @@ export function atomsOf(segs) {
   return atoms;
 }
 
-const loadSegs = (file) =>
+export const loadSegs = (file) =>
   JSON.parse(fs.readFileSync(file, 'utf8')).events.flatMap((ev) =>
     (ev.segs ?? []).map((sg) => ({ t: (ev.tStartMs + (sg.tOffsetMs ?? 0)) / 1000, text: sg.utf8 ?? '', n: jlen(sg.utf8 ?? ''), off: sg.tOffsetMs !== undefined })),
   ).filter((sg) => sg.n);
@@ -113,7 +113,7 @@ export const suspects = (segs) =>
     const slack = next === undefined ? 0 : next - s.t - s.n * POS;
     return s.n >= MIN_CHUNK && slack > SLACK ? [{ ...s, next, slack }] : [];
   });
-const inBlock = (s, t) => t >= s.t - 0.5 && t < s.next; // 起點 t 的中文行算在併塊 s 裡（⚠ 報告、--resplit、--table 共用）
+export const inBlock = (s, t) => t >= s.t - 0.5 && t < s.next; // 起點 t 的中文行算在併塊 s 裡（⚠ 報告、--resplit、--table 共用）
 
 // 一個 chunk = 一個錨點行＋緊接著對不上日文的續行。回傳每個小段的 {S 起, E 說完}
 function place(pieces, anchorT, spanEnd, atoms) {
