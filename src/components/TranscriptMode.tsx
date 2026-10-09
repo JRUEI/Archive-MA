@@ -456,6 +456,7 @@ export default function TranscriptMode({ video }: { video: VideoData }) {
                   rows={subtitleRows}
                   style={subtitle.cur}
                   offsetMs={subtitle.offset}
+                  plain={subtitle.plain}
                 />
               )}
               {landscape && (

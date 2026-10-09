@@ -24,6 +24,8 @@ export interface SubtitleState {
   def: number | null;
   /** 字幕時間補償（毫秒），正值＝字幕提早出現 */
   offset: number;
+  /** 熟肉樣式：影片上的字幕不顯示句讀（見 plainSubtitle），逐字稿不受影響 */
+  plain: boolean;
 }
 
 export const SUBTITLE_STORAGE_KEY = 'rawarchive_subtitle_v1';
@@ -47,6 +49,7 @@ export const DEFAULT_SUBTITLE_STATE: SubtitleState = {
   names: ['', '', ''],
   def: null,
   offset: 0,
+  plain: false,
 };
 
 function clamp(value: unknown, [min, max]: readonly [number, number, number], fallback: number) {
@@ -93,7 +96,22 @@ export function parseSubtitleState(raw: string | null): SubtitleState {
     ),
     def,
     offset: clamp(o.offset, SUBTITLE_RANGE.offset, 0),
+    plain: o.plain === true,
   };
+}
+
+/**
+ * 熟肉樣式（B 站翻譯字幕那種）：列尾與收引號前的「，、。；」拿掉，列內的換成半形空格。
+ * 「？」「！」照留：沒有語氣字的問句、驚嘆只靠它們看得出來。……、——、～、引號、（笑）不動。
+ * 只改顯示用的字串；原稿照樣寫標點，換行就是停頓。
+ */
+export function plainSubtitle(text: string): string {
+  const drop = (gap: string) => (m: string) => (/[？！]/.test(m) ? m.replace(/[^？！]/g, '') : gap);
+  return text
+    .replace(/[，、。！；？]+(?=[」』）]|$)/g, drop(''))
+    .replace(/[，、。！；？]+/g, drop(' '))
+    .replace(/ {2,}/g, ' ')
+    .trim();
 }
 
 /**

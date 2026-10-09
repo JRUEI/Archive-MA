@@ -1,11 +1,12 @@
 // 影片上字幕的純函式檢查：node scripts/check-subtitle.mjs
-// 引號補成對、字幕停留時間與查找、localStorage 存檔的讀回。壞掉就丟錯、結束碼非 0。
+// 引號補成對、熟肉樣式、字幕停留時間與查找、localStorage 存檔的讀回。壞掉就丟錯、結束碼非 0。
 import assert from 'node:assert/strict';
 import {
   DEFAULT_SUBTITLE_STATE,
   balanceQuotes,
   buildSubtitleRows,
   parseSubtitleState,
+  plainSubtitle,
   rowAt,
 } from '../src/lib/subtitle.ts';
 
@@ -38,6 +39,20 @@ assert.deepEqual(
   '到最後都沒收的引號，每一列都補成對',
 );
 assert.deepEqual(balanceQuotes([]), []);
+
+// ── 熟肉樣式：列尾／收引號前的句讀拿掉、列內的換空格，？！留著 ──
+for (const [text, want, msg] of [
+  ['真的嗎！？好啊。', '真的嗎！？好啊', '列內的！？照留、列尾的。拿掉'],
+  ['會做什麼嗎？', '會做什麼嗎？', '列尾的？留著'],
+  ['好耶！走吧！', '好耶！走吧！', '！列內列尾都留'],
+  ['不，其實我也，覺得今天去得了嗎，', '不 其實我也 覺得今天去得了嗎', '列內的，換空格、列尾的拿掉'],
+  ['「要做什麼好呢」的感覺，', '「要做什麼好呢」的感覺', '引號不動'],
+  ['「好啊，」', '「好啊」', '收引號前的，拿掉（balanceQuotes 補上的」也算）'],
+  ['「真的嗎？」', '「真的嗎？」', '收引號前的？留著'],
+  ['所以、那個；嗯。。', '所以 那個 嗯', '連續的句讀併成一個空格'],
+  ['等一下……（笑）', '等一下……（笑）', '……與（笑）不動'],
+  ['寄到 hiyonoma.radio@gmail.com。', '寄到 hiyonoma.radio@gmail.com', '半形的 . 不是句讀'],
+]) assert.equal(plainSubtitle(text), want, msg);
 
 // ── 停留時間與查找（整秒、0.1 秒小數都要能用）──
 const rows = buildSubtitleRows([
@@ -98,6 +113,7 @@ const messy = parseSubtitleState(
     slots: [{ c: '#00ff00', sb: 20 }, 'x', null, { c: '#fff' }],
     def: 1,
     offset: 5000,
+    plain: 'yes',
     summary: 1,
   }),
 );
@@ -109,7 +125,9 @@ assert.deepEqual(messy, {
   names: ['', '', ''],
   def: null,
   offset: 800,
+  plain: false,
 }, '亂填的欄位夾回範圍、多的欄位丟掉、指到空格的預設清掉');
+assert.equal(parseSubtitleState('{"v":1,"on":true}').plain, false, '舊存檔沒有熟肉欄位：預設關');
 assert.deepEqual(Object.keys(messy.slots[0]).sort(), ['sb', 'sf', 'sw'], '快捷只存樣式三欄');
 
 const good = {
@@ -120,6 +138,7 @@ const good = {
   names: ['夜間', '', ''],
   def: 0,
   offset: -200,
+  plain: true,
 };
 assert.deepEqual(parseSubtitleState(JSON.stringify(good)), good, '正常的存檔原樣讀回');
 

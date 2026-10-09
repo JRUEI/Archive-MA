@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>熟肉字幕方案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f5f1; --surface: #ffffff; --ink: #1c1c1e; --muted: #66666c; --line: #e2e0da;
+    --track: #edebe5; --accent: #2462c8; --accent-soft: rgba(36, 98, 200, .15);
+    --warn: #b9520c; --warn-soft: rgba(185, 82, 12, .16); --note: #7c7c82; --on-fill: #ffffff;
+    --lab: 56px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111113; --surface: #1a1a1d; --ink: #ececef; --muted: #9c9ca4; --line: #2d2d33;
+      --track: #24242a; --accent: #7aa5ff; --accent-soft: rgba(122, 165, 255, .2);
+      --warn: #f39a55; --warn-soft: rgba(243, 154, 85, .2); --note: #8c8c94; --on-fill: #111113;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111113; --surface: #1a1a1d; --ink: #ececef; --muted: #9c9ca4; --line: #2d2d33;
+    --track: #24242a; --accent: #7aa5ff; --accent-soft: rgba(122, 165, 255, .2);
+    --warn: #f39a55; --warn-soft: rgba(243, 154, 85, .2); --note: #8c8c94; --on-fill: #111113;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.75 "Noto Sans TC", system-ui, sans-serif;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 40px 16px 96px; }
+  .eyebrow { font-size: 13px; color: var(--muted); }
+  h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.2; margin: 6px 0 14px; font-weight: 700; }
+  .lede { color: var(--muted); max-width: 46em; margin: 0; }
+  section { margin-top: 52px; }
+  h2 { font-size: 21px; line-height: 1.4; margin: 0 0 6px; }
+  .sub-h { color: var(--muted); margin: 0 0 16px; font-size: 15px; }
+  code { font-size: .88em; background: var(--track); padding: .1em .35em; border-radius: 4px; }
+  [lang="ja"] { font-family: "Noto Sans JP", "Noto Sans TC", sans-serif; }
+
+  .points { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 12px; }
+  .points li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+  .points b { display: block; font-size: 17px; margin-bottom: 2px; }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  .seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; background: var(--track); }
+  .seg button {
+    border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 14px; line-height: 1.4;
+    padding: 6px 14px; border-radius: 999px; cursor: pointer;
+  }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .14); }
+  .play {
+    width: 36px; height: 36px; padding: 0; border-radius: 50%; border: 1px solid var(--line);
+    background: var(--surface); color: var(--ink); display: grid; place-items: center; cursor: pointer;
+  }
+  .play svg { width: 14px; height: 14px; display: block; }
+  .clock { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 4.6em; }
+  .src { font-size: 13px; color: var(--muted); flex-basis: 100%; }
+  .toggle { font-size: 14px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .toggle input { margin: 0; accent-color: var(--accent); }
+
+  .frames { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  figure { margin: 0; }
+  figcaption { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .frame {
+    position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; container-type: inline-size;
+    background: radial-gradient(120% 90% at 30% 20%, #3b404c 0%, #1e2129 55%, #121318 100%);
+  }
+  .subline {
+    position: absolute; left: 5%; right: 5%; bottom: 13%; text-align: center; color: #fff;
+    font-weight: 700; font-size: 4.4cqw; line-height: 1.35; text-wrap: balance; overflow-wrap: anywhere;
+  }
+  .subline span {
+    background: rgba(0, 0, 0, .75); border-radius: .18em; padding: 0 .4em .112em;
+    -webkit-box-decoration-break: clone; box-decoration-break: clone;
+  }
+  #subNew { word-break: keep-all; } /* 熟肉：跟站上一樣只在空格換行 */
+  .flag {
+    position: absolute; top: 8px; left: 8px; right: 8px; width: fit-content; font-size: 12px; line-height: 1.5;
+    background: #f39a55; color: #1b1208; border-radius: 6px; padding: 2px 8px; font-weight: 500;
+  }
+  .flag[hidden] { display: none; }
+
+  .jstrip { display: grid; grid-template-columns: var(--lab) 1fr; margin-top: 14px; min-height: 2.6em; align-items: baseline; }
+  .jstrip .k { font-size: 12px; color: var(--muted); }
+  .jtext { font-size: 15px; line-height: 1.6; }
+
+  .tl { display: grid; grid-template-columns: var(--lab) 1fr; row-gap: 6px; margin-top: 8px; user-select: none; -webkit-user-select: none; }
+  .lab { grid-column: 1; font-size: 12px; color: var(--muted); align-self: center; line-height: 1.3; }
+  .track { grid-column: 2; align-self: center; position: relative; height: 26px; background: var(--track); border-radius: 4px; overflow: hidden; cursor: pointer; }
+  .track.tall { height: 40px; }
+  .track.axis { height: 18px; background: none; overflow: visible; cursor: default; }
+  .r1 { grid-row: 1; } .r2 { grid-row: 2; } .r3 { grid-row: 3; } .r4 { grid-row: 4; }
+  .tick { position: absolute; top: 0; bottom: 0; width: 2px; transform: translateX(-50%); background: var(--accent); opacity: .85; }
+  .blk { position: absolute; top: 6px; bottom: 6px; background: var(--warn-soft); border-radius: 3px; }
+  .bar {
+    position: absolute; top: 3px; height: 20px; border-radius: 4px; border: 1px solid var(--accent);
+    background: var(--accent-soft); color: var(--ink); font-size: 11px; line-height: 18px; padding: 0 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .bar.est { border-color: var(--warn); background: repeating-linear-gradient(135deg, var(--warn-soft) 0 5px, transparent 5px 9px); }
+  .bar.note { border-style: dashed; border-color: var(--note); background: none; color: var(--muted); }
+  .bar.cur { background: var(--accent); color: var(--on-fill); }
+  .bar.est.cur { background: var(--warn); color: var(--on-fill); }
+  .bar.note.cur { background: var(--note); color: var(--on-fill); }
+  .wh {
+    position: absolute; top: 28px; height: 8px; border-left: 2px solid var(--warn); border-right: 2px solid var(--warn);
+    background: linear-gradient(var(--warn), var(--warn)) center / 100% 2px no-repeat;
+  }
+  .phl { grid-column: 2; grid-row: 1 / 4; position: relative; pointer-events: none; z-index: 2; }
+  .ph { position: absolute; top: -3px; bottom: -3px; width: 2px; transform: translateX(-50%); background: var(--ink); border-radius: 1px; }
+  .axis .tk { position: absolute; top: 0; transform: translateX(-50%); font-size: 11px; line-height: 18px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); margin-top: 12px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 22px; height: 12px; border-radius: 3px; border: 1px solid var(--accent); background: var(--accent-soft); flex: none; }
+  .sw.s-est { border-color: var(--warn); background: repeating-linear-gradient(135deg, var(--warn-soft) 0 4px, transparent 4px 7px); }
+  .sw.s-rng { height: 8px; border: 0; border-left: 2px solid var(--warn); border-right: 2px solid var(--warn); border-radius: 0; background: linear-gradient(var(--warn), var(--warn)) center / 100% 2px no-repeat; }
+  .sw.s-blk { border: 0; background: var(--warn-soft); }
+
+  details { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+  summary { cursor: pointer; font-size: 14px; color: var(--muted); }
+  .tw { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.55; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  th { font-weight: 500; color: var(--muted); font-size: 13px; white-space: nowrap; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.t { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--muted); }
+  .w { color: var(--accent); white-space: nowrap; }
+  .b { color: var(--warn); white-space: nowrap; }
+  .hot { color: var(--warn); font-weight: 700; }
+  .ref td { color: var(--muted); }
+  .note-s { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+  .miss { color: var(--muted); }
+
+  .steps th:first-child, .steps td:first-child { white-space: nowrap; }
+  .rulebox { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; margin-top: 14px; }
+  .rulebox ul { margin: 6px 0 0; padding-left: 1.2em; }
+  .rulebox li + li { margin-top: 4px; }
+  .decide { display: grid; gap: 12px; margin-top: 14px; }
+  .decide .card { display: grid; gap: 4px; }
+  .decide .q { font-weight: 700; }
+  .decide .rec { color: var(--accent); font-weight: 500; }
+  .decide .why { color: var(--muted); font-size: 14px; }
+  .todo { margin: 10px 0 0; padding-left: 1.2em; }
+  .todo li + li { margin-top: 8px; }
+  .todo .st { font-size: 13px; font-weight: 500; color: var(--accent); margin-right: 8px; }
+  .todo .st.no { color: var(--muted); }
+  .todo .res { display: block; font-size: 14px; color: var(--muted); }
+
+  @media (max-width: 640px) {
+    :root { --lab: 44px; }
+    .frames, .rulebox { grid-template-columns: 1fr; }
+    .points li { padding: 12px 14px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">MyArc · 方案提案 · 2026-10-10 更新</div>
+  <h1>熟肉字幕方案</h1>
+  <p class="lede">把 jurii 的熟肉斷法延伸到本站：去標點、短列、空格換列分句。兩種日文自動字幕來源各能做到哪，精修和校對怎麼分工。數字是本站 8 支影片實測；標「Sonnet 提」的是從另一個對話採用的。</p>
+
+  <section>
+    <h2>結論</h2>
+    <ul class="points">
+      <li><b>方向對，稿子不用大改</b>本站每列字數中位數已經是 7–11 字，跟 jurii 的 9 字差不多。差在兩件事：標點，以及超過 17 字的長列（本站 8–14%，jurii 0%）。</li>
+      <li><b>標點拿掉是顯示規則，不是翻譯規則</b>原稿保留標點（retime 切列、引號補成對、校對對照都靠它），疊字幕時再轉成熟肉樣式。做成字幕設定裡的開關（Sonnet 提），在 8 支影片上實際比較，不喜歡也能退回。</li>
+      <li><b>切短：硬切 12 字，時間其次</b>（10-10 改）retime 在「。？！」（不夠再「，、」）把長列切到 12 字以內，對不到日文開口也切，整塊型一樣；只有切出來的一段不到 0.8 秒（讀不完）才併回。8 支影片都已寫回稿子：每列中位 7–9 字、p90 13–17，超過 12 字從 25–44% 降到 12–22%，剩下的多半是列內沒有標點可切。代價在整塊型和 ⚠ 多的影片：新列起點照字數估，起點對得到 mz_9XZD5vQ0 從 79% 降到 64%、NVf70eFnyjI 從 73% 降到 60%。10-09 的「有點才切」對不到就併回，整塊型幾乎切不動，畫面上留下「呢。所以みーちゃん今天啊，…」這種兩句擠一列。</li>
+      <li><b>一行放不下時，在空格換行</b>熟肉樣式的疊字幕只在空格（原本的「，、」）換行，「而且」不會被拆成「而／且」；一段長到一行放不下才照字切。</li>
+      <li><b>整塊型缺的是「時間軸」，不是多一輪精修或校對</b>LLM 聽不到聲音，稿子讀再多遍也對不準時間；字幕設定的「延遲」只能整段提前或延後，修不了每塊不同的誤差（Sonnet 提）。字幕組有專人聽音檔對時間；本站不裝 Whisper（顯卡只有 2060 6 GB、日文辨識不好、流程太複雜），整塊型照樣硬切，新列早晚一兩秒就讓它去；⚠ 照舊用瀏覽器量音量找停頓來校。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>播放比較</h2>
+    <p class="sub-h">同一段稿子，左邊是改之前的顯示，右邊是熟肉樣式。右邊的切法可以切換：「硬切 12 字」是 10-10 採用、已經寫回稿子的版本；「有點才切」是 10-09 的版本，切點對不到日文開口就併回去（逐字型一列最多 17 字，整塊型 28 字）。整塊型 08:50 起是 ⚠ 併塊，還沒切。沒有聲音，「日文字幕」那一列就是此刻在講什麼。</p>
+    <div class="card">
+      <div class="controls">
+        <div class="seg" id="srcSeg" role="group" aria-label="來源">
+          <button type="button" data-i="0" aria-pressed="true">逐字型</button>
+          <button type="button" data-i="1" aria-pressed="false">整塊型</button>
+        </div>
+        <button type="button" class="play" id="play" aria-label="播放">
+          <svg viewBox="0 0 14 14" aria-hidden="true"><path id="playIcon" fill="currentColor" d="M3 1.5v11l9.5-5.5z"/></svg>
+        </button>
+        <span class="clock" id="clock">00:00.0</span>
+        <div class="seg" id="laneSeg" role="group" aria-label="熟肉切法">
+          <button type="button" data-lane="s12" aria-pressed="true">硬切 12 字</button>
+          <button type="button" data-lane="sA" aria-pressed="false">有點才切</button>
+        </div>
+        <label class="toggle"><input type="checkbox" id="keepQ" checked> 熟肉保留「？」「！」</label>
+        <span class="src" id="src"></span>
+      </div>
+      <div class="frames">
+        <figure>
+          <figcaption>改之前（有標點，一列最多 28 字）</figcaption>
+          <div class="frame"><div class="subline"><span id="subNow"></span></div></div>
+        </figure>
+        <figure>
+          <figcaption id="capNew"></figcaption>
+          <div class="frame"><div class="flag" id="flag" hidden></div><div class="subline"><span id="subNew"></span></div></div>
+        </figure>
+      </div>
+      <div class="jstrip"><span class="k">日文</span><span class="jtext" id="jtext" lang="ja"></span></div>
+      <div class="tl" id="tl">
+        <div class="lab r1">日文<br>字幕</div><div class="track r1" id="trJ"></div>
+        <div class="lab r2">改前</div><div class="track r2" id="trN"></div>
+        <div class="lab r3">熟肉</div><div class="track tall r3" id="trS"></div>
+        <div class="phl"><div class="ph" id="ph"></div></div>
+        <div class="lab r4"></div><div class="track axis r4" id="trA"></div>
+      </div>
+      <div class="legend">
+        <span><i class="sw"></i>起點對得到日文的字</span>
+        <span><i class="sw s-est"></i>起點照字數估的</span>
+        <span><i class="sw s-rng"></i>估的起點可能落在這段範圍</span>
+        <span><i class="sw s-blk"></i>整塊字幕：只知道開頭</span>
+      </div>
+      <details>
+        <summary>校對員拿到的對照表（這 30 秒）</summary>
+        <div class="tw"><table><thead><tr><th>時間</th><th>熟肉字幕</th><th>這列顯示時講的日文</th></tr></thead><tbody id="xref"></tbody></table></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2>量測</h2>
+    <p class="sub-h">10-10 硬切寫回稿子前後的比較（改前＝上一個 commit 的稿子）。</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>影片</th><th>日文自動字幕</th><th class="n">列數<br>改前 → 硬切</th><th class="n">起點對得到<br>改前 → 硬切</th><th class="n">可能差 2 秒以上<br>改前 → 硬切</th><th class="n">每列字數 中位 / p90<br>改前 → 硬切</th><th class="n">超過 12 字<br>改前 → 硬切</th></tr></thead>
+        <tbody>
+          <tr><td>WwCMhxWgWTI</td><td class="w">逐字</td><td class="n">611 → 731</td><td class="n">96 → 92%</td><td class="n">0 → 0%</td><td class="n">11 / 18 → 9 / 14</td><td class="n">35 → 17%</td></tr>
+          <tr><td>-eJD3Nk4uZU</td><td class="w">逐字</td><td class="n">541 → 634</td><td class="n">96 → 93%</td><td class="n">0 → 0%</td><td class="n">10 / 17 → 9 / 14</td><td class="n">35 → 16%</td></tr>
+          <tr><td>wMSPWqjJGM0</td><td class="w">逐字＋標點</td><td class="n">1,949 → 2,519</td><td class="n">94 → 90%</td><td class="n">3 → 4%</td><td class="n">11 / 18 → 9 / 14</td><td class="n">41 → 14%</td></tr>
+          <tr><td>mz_9XZD5vQ0</td><td class="b">整塊</td><td class="n">1,328 → 1,613</td><td class="n">79 → <span class="hot">64</span>%</td><td class="n">19 → <span class="hot">33</span>%</td><td class="n">9 / 20 → 7 / 14</td><td class="n">32 → 14%</td></tr>
+          <tr><td>Q5WpQvExXKc</td><td class="b">整塊</td><td class="n">437 → 499</td><td class="n">86 → <span class="hot">75</span>%</td><td class="n">10 → <span class="hot">22</span>%</td><td class="n">7 / 18 → 7 / 13</td><td class="n">25 → 12%</td></tr>
+          <tr><td>BTraK6PHUp0</td><td class="w">逐字＋標點</td><td class="n">686 → 804</td><td class="n">89 → 78%</td><td class="n">9 → 20%</td><td class="n">9 / 20 → 8 / 15</td><td class="n">33 → 19%</td></tr>
+          <tr><td>NVf70eFnyjI</td><td class="w">逐字＋標點</td><td class="n">284 → 353</td><td class="n">73 → <span class="hot">60</span>%</td><td class="n">23 → <span class="hot">35</span>%</td><td class="n">11 / 22 → 8 / 17</td><td class="n">44 → 22%</td></tr>
+          <tr><td>xCs2aQcp5xE</td><td class="b">整塊</td><td class="n">1,296 → 1,545</td><td class="n">77 → <span class="hot">64</span>%</td><td class="n">18 → <span class="hot">32</span>%</td><td class="n">8 / 20 → 7 / 14</td><td class="n">30 → 14%</td></tr>
+          <tr class="ref"><td>jurii 0930（參考）</td><td>逐字</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">9 / 12</td><td class="n">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note-s">「對得到」＝列的起點離某個日文開口 0.1 秒內（稿上時間只到 0.1 秒）；「可能差 2 秒以上」＝對不到，而且前後兩個日文時間點相隔超過 2 秒。超過 12 字還剩 12–22%：多半是列內沒有標點可切（例如「隱約覺得如果能做點什麼就好了」），其餘是切出來的一段不到 0.8 秒，硬切也讀不完，所以併回；⚠ 併塊裡的 61 列沒動。NVf70eFnyjI 只有 284 列卻有 5 處 ⚠ 併塊（多出 5–19 秒空檔），改前就有兩成多可能差 2 秒以上。對到的是不是語意上正確的那個字，要靠精修讓切點跟著日文語序走；jurii 手對過 33 列，約六成準到 0.1 秒，最多差 0.9 秒。</p>
+  </section>
+
+  <section>
+    <h2>熟肉規則（延伸 jurii）</h2>
+    <div class="tw">
+      <table>
+        <thead><tr><th>項目</th><th>jurii 現在</th><th>本站提案</th></tr></thead>
+        <tbody>
+          <tr><td>句末「。」</td><td>不寫</td><td>顯示時拿掉</td></tr>
+          <tr><td>「？」「！」</td><td>不寫</td><td>待決定，建議保留（見下方）</td></tr>
+          <tr><td>列內「，」「、」</td><td>半形空格</td><td>顯示時換成半形空格</td></tr>
+          <tr><td>……　——　～　「」　（笑）</td><td>照留</td><td>照留</td></tr>
+          <tr><td>一列長度</td><td>中位 8–12 字，最長 17</td><td>硬切到 12 字（不算標點），對不到日文開口也切；切出來不到 0.8 秒才併回</td></tr>
+          <tr><td>起點</td><td>第一個字開口，到 0.1 秒</td><td>相同，retime 已經在做</td></tr>
+          <tr><td>標點存在哪</td><td>原稿就不寫</td><td>原稿保留，顯示時轉換</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="rulebox">
+      <div class="card">
+        <b>精修要多查的事（熟肉才有）</b>
+        <ul>
+          <li>切點落在日文的語意停頓；一列放半句到一句，不把兩個完整句子擠在同一列。</li>
+          <li>切開的兩列，中文語序跟著日文走：前一列只翻當下講到的日文，字幕不能先講出還沒說到的話。</li>
+          <li>沒有句號後，句子的界線靠換列；問句、感嘆靠語氣字（嗎、呢、啦、欸）帶出。</li>
+          <li>語氣字（呢、吧、嗎）和收尾的「」』」不能落單到下一列開頭；切得越短越容易出現，<code>--scan</code> 會抓。10-10 清掉 21 列語氣字、6 列「」」開頭，8 支現在都是 0。</li>
+          <li>字數分布：中位 7–10、p90 14 以下（jurii 中位 9、p90 12）。jurii 另有「5 字以下不超過兩成」：硬切後逐字型 13–21%，整塊型的廣播和 vlog 短回應多，34–37%，這條先不套。</li>
+        </ul>
+      </div>
+      <div class="card">
+        <b>為什麼標點留在原稿</b>
+        <ul>
+          <li><code>retime-subtitles.mjs</code> 靠「。？！，、」決定長列在哪裡切。</li>
+          <li>疊字幕的引號補成對（<code>balanceQuotes</code>）靠「」本身要對。</li>
+          <li>校對時，句號和問號是判斷「這句講完了沒、是不是問句」的線索。</li>
+          <li>現有 8 支影片、約 7,100 列不用重寫；逐字稿列表要不要跟著改，可以另外決定。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>流程與分工</h2>
+    <p class="sub-h">角色照「看什麼」分，不照來源分：初修看意思，精修看中文和切法，校對要一雙沒看過翻譯過程的眼睛。來源類型只決定第 0、3 步走哪條路，以及第 4 步的對照表能細到哪。</p>
+    <div class="tw">
+      <table class="steps">
+        <thead><tr><th>步驟</th><th>誰做</th><th>逐字型</th><th>整塊型</th></tr></thead>
+        <tbody>
+          <tr><td>0 抓素材</td><td>腳本</td><td>日文字幕；腳本判斷來源類型</td><td>同左</td></tr>
+          <tr><td>1 翻譯＋初修</td><td>主對話</td><td>依日文句子翻，ASR 可以逐句對照</td><td>ASR 只當大意；靠上下文猜的標「推測」</td></tr>
+          <tr><td>2 精修</td><td>skill（主對話）</td><td>在只有起點的稿上做：熟肉要多查的事、用詞統一、台灣用語、AI 腔</td><td>同左</td></tr>
+          <tr><td>3 切列＋對時</td><td>retime 腳本</td><td>在標點處硬切到 12 字；起點貼日文開口</td><td>同樣硬切到 12 字，新列起點照字數估；列出 ⚠</td></tr>
+          <tr><td>4 校對</td><td>獨立 subagent，只讀、出清單</td><td>拿「每列中文 ↔ 這列顯示時講的日文」對照表逐列查</td><td>只能逐塊查。時間只讀稿查不出來，⚠ 用瀏覽器量音量找停頓來校</td></tr>
+          <tr><td>5 驗證</td><td>腳本</td><td>validate；<code>--scan</code> 多查落單語氣字、超過 12 字、字數分布</td><td>同左</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note-s">精修排在對時之前（Sonnet 提的順序；上一版排在後面是錯的）：retime 只收只有起點的稿，精修切出來的新列會由它重新對時。對時之後只改字、不動時間；校對抓到要重切的，逐字型照對照表上日文字的時間手動切，整塊型照字數比例估。</p>
+  </section>
+
+  <section>
+    <h2>決定（10-09、10-10）</h2>
+    <div class="decide">
+      <div class="card"><span class="q">一列多長？</span><span class="rec">決定（10-10）：硬切 12 字，視覺優先</span><span class="why">時間其次，主要是視覺：兩句擠在一列、「而／且」拆兩行，比起點早晚半秒更礙眼。逐字型切點九成以上對得到日文開口；整塊型新列起點照字數估，mz_9XZD5vQ0 有三成可能差 2 秒以上，看到明顯對不上的再手動校。取代 10-09 的「有點才切」。</span></div>
+      <div class="card"><span class="q">標點放哪？</span><span class="rec">決定：原稿保留，顯示時轉換</span><span class="why">另一個選項是照 jurii，原稿直接不寫。缺點是 retime 切列、引號補對要跟著改，舊稿也要重寫。</span></div>
+      <div class="card"><span class="q">「？」「！」要不要留？</span><span class="rec">決定：都留</span><span class="why">每支影片有 2–10 列問句只靠「？」，沒有嗎、呢這類語氣字，拿掉就讀成肯定句。「！」本站只有 0–3% 的列用到，留不留差別不大；字幕組常見做法是兩個都留（Sonnet 提），jurii 是兩個都拿掉。上方 demo 可以切換看看。</span></div>
+      <div class="card"><span class="q">整塊型要不要補逐字時間？</span><span class="rec">決定：不補，不裝 Whisper</span><span class="why">顯卡只有 2060 6 GB，Whisper 日文辨識不好，流程也太複雜；YouTube 已經辨識過，不再多花時間。整塊型照樣硬切（10-10），⚠ 照舊用瀏覽器量音量找停頓來校（mz_9XZD5vQ0 用過）。</span></div>
+      <div class="card"><span class="q">套用範圍？</span><span class="rec">決定：先只改疊字幕，做成字幕設定裡的開關</span><span class="why">先在 8 支影片上開關比較，再決定要不要預設開（開關是 Sonnet 提的）。逐字稿列表是拿來讀和搜尋的，標點有幫助，先不動。</span></div>
+    </div>
+    <p class="sub-h" style="margin-top:18px">決定之後要做的事（10-10：除了 ⚠ 那項都做完）：</p>
+    <ul class="todo">
+      <li><span class="st">已做</span>字幕設定加「熟肉樣式」開關：<code>src/lib/subtitle.ts</code> 加轉換函式，<code>scripts/check-subtitle.mjs</code> 加它的測試。<span class="res">只換疊字幕，逐字稿列表不動；設定跟其他字幕設定一起記在瀏覽器。</span></li>
+      <li><span class="st">已做</span>retime 改硬切（10-10）：在「。？！」（不夠再「，、」）切到 12 字以內，對不到日文開口也切；切出來不到 0.8 秒才併回。已經手校過 ⚠ 的段落（例如 mz_9XZD5vQ0 36:35.8）不動。<span class="res">8 支都用 <code>--resplit</code> 寫回稿子（沒有日文字幕檔的 3 支先用 yt-dlp 抓）：7,132 → 8,698 列，超過 12 字從 25–44% 降到 12–22%，重跑不再變；⚠ 併塊裡 61 列沒動。順手修掉 <code>--resplit</code> 少切的 bug：稿上時間四捨五入到 0.1 秒，列會對不到自己開頭那段日文。</span></li>
+      <li><span class="st">已做</span><code>retime-subtitles.mjs --scan</code> 多印三種警告：落單語氣字、超過 12 字的列、字數分布。<span class="res">10-10 修掉 21 列落單語氣字、6 列「」」開頭（切列時收引號要跟著句尾，已補測試），8 支現在都是 0。</span></li>
+      <li><span class="st">已做</span><code>refine-subtitles</code> skill：精修清單（在對時之前跑），以及派校對 subagent 的指示。<span class="res">校對員 <code>subtitle-proofreader</code> 只讀、只出清單。兩個都在 <code>.claude/</code>，被 gitignore，只在這台電腦。</span></li>
+      <li><span class="st">已做</span>腳本：判斷來源類型、產出校對對照表。<span class="res">每個模式第一行印來源類型；<code>--table</code> 印每列中文對這列時間內的日文，標出估、⚠、&gt;12、孤、無日文，以及有日文卻沒中文的「未翻?」。</span></li>
+      <li><span class="st">已做</span>疊字幕的熟肉樣式只在空格換行（<code>word-break: keep-all</code>）。<span class="res">「而且」不會被拆成兩行；一段長到一行放不下才照字切。</span></li>
+      <li><span class="st no">待做</span>⚠ 併塊裡的 61 列：對畫面或量音量校過時間，再手動切。</li>
+      <li><span class="st no">不做</span>Whisper：選了才做。<span class="res">10-09 決定不裝，什麼都沒裝。</span></li>
+    </ul>
+  </section>
+</main>
+
+<script>
+const DATA = [{"id":"WwCMhxWgWTI","t0":171,"t1":201,"word":true,"jp":[{"t":171,"end":171.2,"text":"か"},{"t":171.2,"end":171.68,"text":"ね"},{"t":171.68,"end":171.88,"text":"でき"},{"t":171.88,"end":172.52,"text":"たら"},{"t":172.52,"end":172.84,"text":"楽し"},{"t":172.84,"end":173,"text":"そう"},{"t":173,"end":173.08,"text":"だ"},{"t":173.08,"end":173.24,"text":"な"},{"t":173.24,"end":173.4,"text":"と"},{"t":173.4,"end":173.56,"text":"思い"},{"t":173.56,"end":173.88,"text":"つつ"},{"t":173.88,"end":174,"text":"だっ"},{"t":174,"end":174.08,"text":"た"},{"t":174.08,"end":174.16,"text":"ん"},{"t":174.16,"end":174.24,"text":"です"},{"t":174.24,"end":174.44,"text":"けど"},{"t":174.44,"end":174.64,"text":"今日"},{"t":174.64,"end":174.76,"text":"は"},{"t":174.76,"end":174.96,"text":"まだ"},{"t":174.96,"end":175.28,"text":"早い"},{"t":175.28,"end":175.76,"text":"から"},{"t":175.76,"end":176.08,"text":"確か"},{"t":176.08,"end":176.28,"text":"に"},{"t":176.28,"end":176.52,"text":"ね"},{"t":176.52,"end":176.92,"text":"まだ"},{"t":176.92,"end":177.2,"text":"まだ"},{"t":177.2,"end":177.48,"text":"ちょい"},{"t":177.48,"end":177.96,"text":"早"},{"t":177.96,"end":178.2,"text":"ちょい"},{"t":178.2,"end":178.48,"text":"早"},{"t":178.48,"end":178.52,"text":"な"},{"t":178.52,"end":178.6,"text":"ん"},{"t":178.6,"end":179.12,"text":"で"},{"t":179.12,"end":179.32,"text":"そう"},{"t":179.32,"end":179.44,"text":"です"},{"t":179.44,"end":180.28,"text":"ね"},{"t":180.28,"end":180.6,"text":"かなり"},{"t":180.6,"end":180.72,"text":"は"},{"t":180.72,"end":180.96,"text":"なんか"},{"t":180.96,"end":181.2,"text":"する"},{"t":181.2,"end":181.52,"text":"の"},{"t":181.52,"end":182.52,"text":"ええ"},{"t":182.52,"end":182.92,"text":"なんか"},{"t":182.92,"end":183.64,"text":"で"},{"t":183.64,"end":184.64,"text":"も"},{"t":184.64,"end":184.88,"text":"なん"},{"t":184.88,"end":185.52,"text":"と"},{"t":185.52,"end":186.52,"text":"なく"},{"t":186.52,"end":186.84,"text":"なんか"},{"t":186.84,"end":187.04,"text":"でき"},{"t":187.04,"end":187.2,"text":"たら"},{"t":187.2,"end":187.4,"text":"いい"},{"t":187.4,"end":187.6,"text":"なっ"},{"t":187.6,"end":187.68,"text":"て"},{"t":187.68,"end":187.76,"text":"いう"},{"t":187.76,"end":188.16,"text":"漠然"},{"t":188.16,"end":188.24,"text":"は"},{"t":188.24,"end":188.36,"text":"ある"},{"t":188.36,"end":188.44,"text":"ん"},{"t":188.44,"end":188.52,"text":"です"},{"t":188.52,"end":188.96,"text":"けど"},{"t":188.96,"end":189.44,"text":"分かる"},{"t":189.44,"end":190.44,"text":"わかる"},{"t":190.44,"end":190.8,"text":"何"},{"t":190.8,"end":190.88,"text":"し"},{"t":190.88,"end":191.2,"text":"ようっ"},{"t":191.2,"end":191.32,"text":"て"},{"t":191.32,"end":191.64,"text":"感じ"},{"t":191.64,"end":192.08,"text":"で"},{"t":192.08,"end":192.48,"text":"必ず"},{"t":192.48,"end":192.68,"text":"やり"},{"t":192.68,"end":192.84,"text":"たい"},{"t":192.84,"end":193.04,"text":"わけ"},{"t":193.04,"end":193.12,"text":"で"},{"t":193.12,"end":193.2,"text":"は"},{"t":193.2,"end":193.84,"text":"ない"},{"t":193.84,"end":193.96,"text":"そう"},{"t":193.96,"end":194.16,"text":"そう"},{"t":194.16,"end":194.2,"text":"な"},{"t":194.2,"end":194.28,"text":"ん"},{"t":194.28,"end":194.36,"text":"です"},{"t":194.36,"end":194.44,"text":"よ"},{"t":194.44,"end":194.48,"text":"ね"},{"t":194.48,"end":194.72,"text":"何"},{"t":194.72,"end":194.96,"text":"しよう"},{"t":194.96,"end":195.32,"text":"からみ"},{"t":195.32,"end":195.52,"text":"たい"},{"t":195.52,"end":195.64,"text":"ま"},{"t":195.64,"end":195.96,"text":"とりあえず"},{"t":195.96,"end":196.08,"text":"お"},{"t":196.08,"end":196.28,"text":"菓子"},{"t":196.28,"end":196.4,"text":"は"},{"t":196.4,"end":196.68,"text":"もらおう"},{"t":196.68,"end":196.76,"text":"か"},{"t":196.76,"end":196.92,"text":"な"},{"t":196.92,"end":197,"text":"と"},{"t":197,"end":197.36,"text":"思っ"},{"t":197.36,"end":198.36,"text":"て"},{"t":198.36,"end":198.68,"text":"くる"},{"t":198.68,"end":198.92,"text":"方"},{"t":198.92,"end":199.08,"text":"じゃ"},{"t":199.08,"end":199.64,"text":"なく"},{"t":199.64,"end":199.84,"text":"もらい"},{"t":199.84,"end":200.16,"text":"ます"},{"t":200.16,"end":200.44,"text":"もらう"},{"t":200.44,"end":201.52,"text":"の"}],"now":[{"s":170.8,"e":174.2,"text":"不過今年好像也是，如果能做應該會很有趣，"},{"s":174.2,"e":175.5,"text":"但今天還太早了。"},{"s":175.5,"e":177.2,"text":"對啊，還早，還早。"},{"s":177.2,"e":180.6,"text":"那かなりん你呢，會做什麼嗎？"},{"s":180.6,"e":183.6,"text":"嗯，就是，"},{"s":183.6,"e":187.7,"text":"隱約覺得如果能做點什麼就好了，"},{"s":187.7,"e":190.8,"text":"這種模模糊糊的想法是有，"},{"s":190.8,"e":193.2,"text":"懂，我懂，就是「要做什麼好呢」的感覺，"},{"s":193.2,"e":193.8,"text":"也不是一定要做。"},{"s":193.8,"e":195.5,"text":"對，沒錯，我也是從「要做什麼」開始想，"},{"s":195.5,"e":197,"text":"總之我想去拿點糖果，"},{"s":197,"e":201,"text":"不是給糖果的那一邊，我是拿糖果的。"}],"s12":[{"s":170.8,"e":172.9,"text":"不過今年好像也是，","measured":true,"lo":170.72,"hi":170.88},{"s":172.9,"e":174.2,"text":"如果能做應該會很有趣，","measured":true,"lo":172.84,"hi":173},{"s":174.2,"e":175.5,"text":"但今天還太早了。","measured":true,"lo":174.16,"hi":174.24},{"s":175.5,"e":177.2,"text":"對啊，還早，還早。","measured":false,"lo":175.28,"hi":175.76},{"s":177.2,"e":180.6,"text":"那かなりん你呢，會做什麼嗎？","measured":true,"lo":177.2,"hi":177.48},{"s":180.6,"e":183.6,"text":"嗯，就是，","measured":true,"lo":180.6,"hi":180.72},{"s":183.6,"e":187.7,"text":"隱約覺得如果能做點什麼就好了，","measured":true,"lo":182.92,"hi":183.64},{"s":187.7,"e":190.8,"text":"這種模模糊糊的想法是有，","measured":true,"lo":187.68,"hi":187.76},{"s":190.8,"e":193.2,"text":"懂，我懂，就是「要做什麼好呢」的感覺，","measured":true,"lo":190.8,"hi":190.88},{"s":193.2,"e":193.8,"text":"也不是一定要做。","measured":true,"lo":193.2,"hi":193.84},{"s":193.8,"e":195.5,"text":"對，沒錯，我也是從「要做什麼」開始想，","measured":true,"lo":193.2,"hi":193.84},{"s":195.5,"e":197,"text":"總之我想去拿點糖果，","measured":true,"lo":195.32,"hi":195.52},{"s":197,"e":199.6,"text":"不是給糖果的那一邊，","measured":true,"lo":197,"hi":197.36},{"s":199.6,"e":201,"text":"我是拿糖果的。","measured":true,"lo":199.08,"hi":199.64}],"sA":[{"s":170.9,"e":172.9,"text":"不過今年好像也是，","measured":true,"lo":170.88,"hi":171},{"s":172.9,"e":174.2,"text":"如果能做應該會很有趣，","measured":false,"lo":172.84,"hi":173},{"s":174.2,"e":175.5,"text":"但今天還太早了。","measured":true,"lo":174.24,"hi":174.44},{"s":175.5,"e":177.2,"text":"對啊，還早，還早。","measured":true,"lo":175.28,"hi":175.76},{"s":177.2,"e":180.6,"text":"那かなりん你呢，會做什麼嗎？","measured":true,"lo":177.2,"hi":177.48},{"s":180.6,"e":183.6,"text":"嗯，就是，","measured":true,"lo":180.6,"hi":180.72},{"s":183.6,"e":187.7,"text":"隱約覺得如果能做點什麼就好了，","measured":true,"lo":183.64,"hi":184.64},{"s":187.7,"e":190.5,"text":"這種模模糊糊的想法是有，","measured":true,"lo":187.68,"hi":187.76},{"s":190.5,"e":191.3,"text":"懂，我懂，","measured":true,"lo":190.8,"hi":190.88},{"s":191.3,"e":193.2,"text":"就是「要做什麼好呢」的感覺，","measured":true,"lo":191.2,"hi":191.32},{"s":193.2,"e":193.8,"text":"也不是一定要做。","measured":true,"lo":193.2,"hi":193.84},{"s":193.8,"e":194.2,"text":"對，沒錯，","measured":true,"lo":193.84,"hi":193.96},{"s":194.2,"e":195.5,"text":"我也是從「要做什麼」開始想，","measured":true,"lo":194.2,"hi":194.28},{"s":195.5,"e":197,"text":"總之我想去拿點糖果，","measured":true,"lo":195.52,"hi":195.64},{"s":197,"e":199.6,"text":"不是給糖果的那一邊，","measured":true,"lo":197,"hi":197.36},{"s":199.6,"e":201.5,"text":"我是拿糖果的。","measured":true,"lo":199.64,"hi":199.84}]},{"id":"Q5WpQvExXKc","t0":507,"t1":537,"word":false,"jp":[{"t":501.76,"end":508.2,"text":"この次にロゼミューズの撮影がちょこっとまだ取り切れてないやつと自分の"},{"t":508.2,"end":508.72,"text":"SNS"},{"t":508.72,"end":516.04,"text":"の撮影をしに行きました。その後社員会員書かしてもらいました。"},{"t":516.04,"end":519.16,"text":"その後ジム、"},{"t":519.16,"end":520.96,"text":"その後しろ、"},{"t":520.96,"end":521.92,"text":"YouTube。"},{"t":521.92,"end":523.12,"text":"YouTube"},{"t":523.12,"end":524,"text":"バリキャリ"},{"t":524,"end":530.24,"text":"バリキャリだね。だからみちゃん今日さ、ジさ、ワンチャン来ないんじゃないかと思ってたけどさ。"},{"t":530.24,"end":544.96,"text":"いや、本当はいや、今日行けるかなみたいな、その気持ち的にもちょっと迷ったんだけどでも行くって決めてたし継続は力なりすぎ。"}],"now":[{"s":501.8,"e":508.2,"text":"接著是ロゼミューズ的拍攝，還有一些沒拍完的部分，和自己的"},{"s":508.2,"e":509,"text":"SNS"},{"s":509,"e":514.4,"text":"拍攝。之後還寫了（聽不清楚）。"},{"s":516,"e":517.7,"text":"然後是健身房，"},{"s":519.2,"e":521,"text":"然後是壽司郎，"},{"s":521,"e":522.2,"text":"YouTube。"},{"s":522.2,"e":524,"text":"YouTube，職場女強人"},{"s":524,"e":529.4,"text":"呢。所以みーちゃん今天啊，我還想說健身房說不定不會來了。"},{"s":529.4,"e":530.2,"text":"（笑）"},{"s":530.2,"e":534.4,"text":"不，其實我也，覺得今天去得了嗎，心情上也有點猶豫，"},{"s":534.4,"e":541.3,"text":"不過我早就決定要去了，而且持之以恆就是力量，真的。"}],"s12":[{"s":506.1,"e":508.2,"text":"和自己的","measured":false,"lo":501.76,"hi":508.2},{"s":508.2,"e":509,"text":"SNS","measured":true,"lo":508.2,"hi":508.72},{"s":509,"e":514.4,"text":"拍攝。之後還寫了（聽不清楚）。","measured":false,"lo":508.72,"hi":516.04},{"s":516,"e":517.7,"text":"然後是健身房，","measured":true,"lo":508.72,"hi":516.04},{"s":519.2,"e":521,"text":"然後是壽司郎，","measured":true,"lo":519.16,"hi":520.96},{"s":521,"e":522.2,"text":"YouTube。","measured":true,"lo":520.96,"hi":521.92},{"s":522.2,"e":524,"text":"YouTube，職場女強人呢。","measured":false,"lo":521.92,"hi":523.12},{"s":524,"e":526.6,"text":"所以みーちゃん今天啊，","measured":true,"lo":524,"hi":530.24},{"s":526.6,"e":529.4,"text":"我還想說健身房說不定不會來了。","measured":false,"lo":524,"hi":530.24},{"s":529.4,"e":530.2,"text":"（笑）","note":true},{"s":530.2,"e":534.4,"text":"不，其實我也，覺得今天去得了嗎，心情上也有點猶豫，","measured":true,"lo":524,"hi":530.24},{"s":534.4,"e":541.3,"text":"不過我早就決定要去了，而且持之以恆就是力量，真的。","measured":false,"lo":530.24,"hi":544.96}],"sA":[{"s":501.8,"e":508.2,"text":"接著是ロゼミューズ的拍攝，還有一些沒拍完的部分，和自己的","measured":true,"lo":501.76,"hi":508.2},{"s":508.2,"e":509,"text":"SNS","measured":true,"lo":508.2,"hi":508.72},{"s":509,"e":514.4,"text":"拍攝。之後還寫了（聽不清楚）。","measured":false,"lo":508.72,"hi":516.04},{"s":516,"e":517.7,"text":"然後是健身房，","measured":true,"lo":516.04,"hi":519.16},{"s":519.2,"e":521,"text":"然後是壽司郎，","measured":true,"lo":519.16,"hi":520.96},{"s":521,"e":522.2,"text":"YouTube。","measured":true,"lo":520.96,"hi":521.92},{"s":522.2,"e":524,"text":"YouTube，職場女強人","measured":true,"lo":521.92,"hi":523.12},{"s":524,"e":529.4,"text":"呢。所以みーちゃん今天啊，我還想說健身房說不定不會來了。","measured":true,"lo":524,"hi":530.24},{"s":529.4,"e":530.2,"text":"（笑）","note":true},{"s":530.2,"e":534.4,"text":"不，其實我也，覺得今天去得了嗎，心情上也有點猶豫，","measured":true,"lo":530.24,"hi":544.96},{"s":534.4,"e":541.3,"text":"不過我早就決定要去了，而且持之以恆就是力量，真的。","measured":false,"lo":530.24,"hi":544.96}]}];
+const $ = (s) => document.querySelector(s);
+let cur = 0, t = DATA[0].t0, playing = false, last = 0, keepQ = true, lane = 's12';
+
+const fmt = (x) => {
+  const r = Math.round(x * 10) / 10, m = Math.floor(r / 60);
+  return `${String(m).padStart(2, '0')}:${(r - m * 60).toFixed(1).padStart(4, '0')}`;
+};
+const pos = (x, d) => Math.min(100, Math.max(0, ((x - d.t0) / (d.t1 - d.t0)) * 100));
+// 熟肉樣式：列尾和收引號前的「，、。；」拿掉，列內的換半形空格；「？」「！」看開關（jurii 是全拿掉）
+function shuroku(text) {
+  const cut = (gap) => (m) => (keepQ && /[？！]/.test(m) ? m.replace(/[^？！]/g, '') : gap);
+  return text
+    .replace(/[，、。！；？]+(?=[」』）]|$)/gu, cut(''))
+    .replace(/[，、。！；？]+/gu, cut(' '))
+    .replace(/ {2,}/g, ' ')
+    .trim();
+}
+const at = (rows, x) => rows.findIndex((r) => r.s <= x && x < r.e);
+const el = (cls, left, width, text, title) => {
+  const n = document.createElement('div');
+  n.className = cls;
+  n.style.left = `${left}%`;
+  if (width !== undefined) n.style.width = `${width}%`;
+  if (text !== undefined) n.textContent = text;
+  if (title) n.title = title;
+  return n;
+};
+
+function build() {
+  const d = DATA[cur];
+  const trJ = $('#trJ'), trN = $('#trN'), trS = $('#trS'), trA = $('#trA');
+  [trJ, trN, trS, trA].forEach((n) => n.replaceChildren());
+  for (const j of d.jp) {
+    if (!d.word) trJ.append(el('blk', pos(j.t, d), pos(j.end, d) - pos(j.t, d), undefined, j.text));
+    if (j.t >= d.t0) trJ.append(el('tick', pos(j.t, d), undefined, undefined, j.text));
+  }
+  d.now.forEach((r) => trN.append(el('bar', pos(r.s, d), pos(r.e, d) - pos(r.s, d), r.text, r.text)));
+  d[lane].forEach((r) => {
+    const cls = r.note ? 'bar note' : r.measured ? 'bar' : 'bar est';
+    trS.append(el(cls, pos(r.s, d), pos(r.e, d) - pos(r.s, d), shuroku(r.text), shuroku(r.text)));
+    if (!r.note && !r.measured) trS.append(el('wh', pos(r.lo, d), pos(r.hi, d) - pos(r.lo, d)));
+  });
+  for (let x = Math.ceil(d.t0 / 5) * 5; x < d.t1; x += 5) if (x > d.t0) trA.append(el('tk', pos(x, d), undefined, fmt(x).slice(0, 5)));
+  $('#src').textContent = `${d.word ? '日文自動字幕一個字一個字出現' : '日文自動字幕一次出現一整塊'} · ${d.id} ${fmt(d.t0).slice(0, 5)}–${fmt(d.t1).slice(0, 5)}`;
+  $('#capNew').textContent = lane === 'sA'
+    ? `熟肉（去標點，對得到時間才切短，一列最多 ${d.word ? 17 : 28} 字）`
+    : '熟肉（去標點，硬切到 12 字，已寫回稿子）';
+  buildXref(d);
+  update();
+}
+
+function buildXref(d) {
+  // 字幕時間只到 0.1 秒，日文到 0.01 秒：差 0.1 秒內算同一個點
+  const during = (j, r) => j.t >= r.s - 0.1 && j.t < r.e - 0.1;
+  const rows = d[lane].filter((r) => !r.note).map((r) => {
+    let ja;
+    if (d.word) {
+      ja = d.jp.filter((j) => during(j, r)).map((j) => j.text).join('');
+    } else {
+      const heads = d.jp.filter((j) => during(j, r));
+      const inside = d.jp.find((j) => j.t < r.s - 0.1 && r.s < j.end);
+      ja = heads.length ? heads.map((j) => j.text).join(' ／ ')
+        : inside ? `（在 ${fmt(inside.t)} 起的整塊裡，分不到這一列）` : '';
+    }
+    const miss = ja.startsWith('（') || !ja;
+    return `<tr><td class="t">${fmt(r.s)}</td><td>${shuroku(r.text)}</td><td class="${miss ? 'miss' : ''}"${miss ? '' : ' lang="ja"'}>${ja || '（沒有日文）'}</td></tr>`;
+  });
+  $('#xref').innerHTML = rows.join('');
+}
+
+function update() {
+  const d = DATA[cur];
+  $('#clock').textContent = fmt(t);
+  $('#ph').style.left = `${pos(t, d)}%`;
+  const iN = at(d.now, t), iS = at(d[lane], t);
+  $('#subNow').textContent = iN >= 0 ? d.now[iN].text : '';
+  $('#subNow').hidden = iN < 0;
+  const r = d[lane][iS];
+  $('#subNew').textContent = r ? shuroku(r.text) : '';
+  $('#subNew').hidden = !r;
+  const flag = $('#flag');
+  flag.hidden = !(r && !r.note && !r.measured);
+  if (!flag.hidden) flag.textContent = `起點是估的：實際可能在 ${fmt(r.lo)}–${fmt(r.hi)}（${((Math.round(r.hi * 10) - Math.round(r.lo * 10)) / 10).toFixed(1)} 秒內）`;
+  document.querySelectorAll('#trN .bar').forEach((n, i) => n.classList.toggle('cur', i === iN));
+  document.querySelectorAll('#trS .bar').forEach((n, i) => n.classList.toggle('cur', i === iS));
+  // 日文：逐字型顯示最近 2.5 秒講到的字（像 YouTube 一個字一個字跳出來）；整塊型整塊一起出現
+  let ja = '';
+  if (d.word) ja = d.jp.filter((j) => j.t <= t && j.t > t - 2.5).map((j) => j.text).join('');
+  else ja = (d.jp.find((j) => j.t <= t && t < j.end) || {}).text || '';
+  $('#jtext').textContent = ja;
+}
+
+function loop(ts) {
+  if (!playing) return;
+  const d = DATA[cur];
+  t += (ts - last) / 1000;
+  last = ts;
+  if (t >= d.t1) t = d.t0;
+  update();
+  requestAnimationFrame(loop);
+}
+function setPlaying(on) {
+  playing = on;
+  $('#play').setAttribute('aria-label', on ? '暫停' : '播放');
+  $('#playIcon').setAttribute('d', on ? 'M3 1.5h3v11H3zM8 1.5h3v11H8z' : 'M3 1.5v11l9.5-5.5z');
+  if (on) { last = performance.now(); requestAnimationFrame(loop); }
+}
+
+$('#play').addEventListener('click', () => setPlaying(!playing));
+$('#keepQ').addEventListener('change', (e) => { keepQ = e.target.checked; build(); });
+document.querySelectorAll('#srcSeg button').forEach((b) => b.addEventListener('click', () => {
+  cur = Number(b.dataset.i);
+  document.querySelectorAll('#srcSeg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  t = DATA[cur].t0;
+  build();
+}));
+document.querySelectorAll('#laneSeg button').forEach((b) => b.addEventListener('click', () => {
+  lane = b.dataset.lane;
+  document.querySelectorAll('#laneSeg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  build();
+}));
+['#trJ', '#trN', '#trS'].forEach((id) => $(id).addEventListener('pointerdown', (e) => {
+  const d = DATA[cur], rect = e.currentTarget.getBoundingClientRect();
+  t = d.t0 + ((e.clientX - rect.left) / rect.width) * (d.t1 - d.t0);
+  update();
+}));
+build();
+</script>
+</body>
+</html>

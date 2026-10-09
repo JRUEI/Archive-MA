@@ -15,6 +15,7 @@ import {
   Minimize,
   MoveVertical,
   Pin,
+  RemoveFormatting,
   RotateCcw,
   Star,
   Timer,
@@ -102,7 +103,7 @@ export default function SubtitleToolbar({
   /** 設定鈕之後、全螢幕之前多放的按鈕（畫面定位、完整字幕） */
   children?: ReactNode;
 }) {
-  const { on, cur, offset } = state;
+  const { on, cur, offset, plain } = state;
   const uid = useId();
   const [open, setOpen] = useState<Tool | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -189,6 +190,16 @@ export default function SubtitleToolbar({
         )}
         {on && (
           <div className="grid gap-2.5 border-t border-zinc-200 pt-2.5 dark:border-zinc-800">
+            {/* 不是樣式快捷的一部分：快捷只存位置、字號、粗細 */}
+            <div className="-mx-2 flex">
+              <SwitchRow
+                label="熟肉樣式"
+                Icon={RemoveFormatting}
+                on={plain}
+                title="影片上的字幕不顯示句讀：句尾的「，。」拿掉、句中的換成空格，「？」「！」照留。逐字稿不受影響"
+                onClick={() => onChange({ plain: !plain })}
+              />
+            </div>
             <Slider
               label="位置"
               Icon={MoveVertical}
@@ -328,12 +339,25 @@ export default function SubtitleToolbar({
 }
 
 /** 「字幕」選單裡的一列：圖示＋名稱＋滑動開關 */
-function SwitchRow({ label, Icon, on, onClick }: { label: string; Icon: LucideIcon; on: boolean; onClick: () => void }) {
+function SwitchRow({
+  label,
+  Icon,
+  on,
+  onClick,
+  title,
+}: {
+  label: string;
+  Icon: LucideIcon;
+  on: boolean;
+  onClick: () => void;
+  title?: string;
+}) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={on}
+      title={title}
       onClick={onClick}
       className="flex h-9 min-w-36 flex-1 items-center gap-2 rounded-[10px] px-2 text-[13px] font-bold text-zinc-700 transition hover:bg-accent/10 dark:text-zinc-200"
     >
@@ -401,21 +425,23 @@ function SaveSlot({ state: { cur, slots, names, def }, onChange }: { state: Subt
     setFlash(k);
     flashTimer.current = setTimeout(() => setFlash(null), 1400);
   };
+  // 三顆不折行連圖示實量 258.8px，加面板內距與框 26px＝284.8，留 8px 餘裕：工具列窄於 293px（320 寬的手機）就只留字，不然會撐破面板
   const face = (k: keyof typeof FLASH_TEXT, Icon: LucideIcon, text: string) =>
     flash === k ? (
       <>
-        <Check size={14} strokeWidth={3} aria-hidden="true" />
+        <Check size={14} strokeWidth={3} aria-hidden="true" className="@max-[293px]:hidden" />
         {FLASH_TEXT[k]}
       </>
     ) : (
       <>
-        <Icon size={14} aria-hidden="true" />
+        <Icon size={14} aria-hidden="true" className="@max-[293px]:hidden" />
         {text}
       </>
     );
-  // 閃一下的底色比平常深，字跟著加深一階，對比才維持在 4.5:1 以上
+  // 閃一下的底色比平常深，字跟著加深一階，對比才維持在 4.5:1 以上。
+  // 375 寬的手機每顆 95px：圖示 14＋間距 6＋四個字 52＝72，px-3 只剩 69 會折成兩行，所以內距 px-2、不准折行
   const btn = (k: keyof typeof FLASH_TEXT) =>
-    `${CTRL_BTN} flex-1 gap-1.5 ${flash === k ? 'animate-[btn-pop_0.35s_ease-out] border-accent/60 bg-accent/35! text-red-800! dark:text-red-300!' : ''}`;
+    `${MINI_LOOK} ${CTRL} flex-1 gap-1.5 whitespace-nowrap px-2 ${flash === k ? 'animate-[btn-pop_0.35s_ease-out] border-accent/60 bg-accent/35! text-red-800! dark:text-red-300!' : ''}`;
   const free = slots.indexOf(null);
   const done = () => {
     const n = name.trim().slice(0, SUBTITLE_NAME_MAX);

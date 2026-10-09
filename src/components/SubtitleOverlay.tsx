@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type CSSProperties, type RefObject } from 'react';
-import { rowAt, type SubtitleRow, type SubtitleStyle } from '@/lib/subtitle';
+import { plainSubtitle, rowAt, type SubtitleRow, type SubtitleStyle } from '@/lib/subtitle';
 
 /* 底條高 = 字型的 ascent + descent，各平台字型不同就不一樣，所以字型固定 Noto Sans TC（1.16 + 0.288 em）。
    中文字面在基線上 0.88、下 0.12 em：底條上緣到字面 1.16 − 0.88 = 0.28，下緣 0.288 − 0.12 = 0.168，
@@ -18,11 +18,14 @@ export default function SubtitleOverlay({
   rows,
   style,
   offsetMs,
+  plain,
 }: {
   playerRef: RefObject<{ getCurrentTime: () => number } | null>;
   rows: readonly SubtitleRow[];
   style: SubtitleStyle;
   offsetMs: number;
+  /** 熟肉樣式：不顯示句讀 */
+  plain: boolean;
 }) {
   const [index, setIndex] = useState(-1);
 
@@ -47,11 +50,13 @@ export default function SubtitleOverlay({
   }, [playerRef, rows, offsetMs]);
 
   const row = rows[index];
+  const text = row && (plain ? plainSubtitle(row.text) : row.text);
 
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-x-[5%] z-10 text-center leading-[1.35] text-white text-balance [overflow-wrap:anywhere]"
+      // 熟肉樣式：只在空格換行（keep-all），一段長到一行放不下才照字切（anywhere）
+      className={`pointer-events-none absolute inset-x-[5%] z-10 text-center leading-[1.35] text-white text-balance [overflow-wrap:anywhere] ${plain ? '[word-break:keep-all]' : ''}`}
       style={
         {
           '--sb': style.sb,
@@ -67,14 +72,14 @@ export default function SubtitleOverlay({
       {/* 底條自己一層、整層 75%：多行時上下兩條疊到的地方不會變深，也蓋不到上一行的字；
           字在上面那層，兩層排版一樣所以斷行一致 */}
       <div className="relative min-h-[1.35em]">
-        {row && (
+        {text && (
           <>
             <div className="opacity-75">
-              <span className={`${BAR} bg-black text-transparent`}>{row.text}</span>
+              <span className={`${BAR} bg-black text-transparent`}>{text}</span>
             </div>
             <div className="absolute inset-0">
               <span className={BAR}>
-                {row.text}
+                {text}
               </span>
             </div>
           </>
