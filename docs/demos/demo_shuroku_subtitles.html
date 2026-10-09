@@ -178,7 +178,7 @@
 
   <section>
     <h2>播放比較</h2>
-    <p class="sub-h">同一段稿子，左邊是改之前的顯示，右邊是熟肉樣式。右邊的切法可以切換：「硬切 12 字」是 10-10 採用、已經寫回稿子的版本；「有點才切」是 10-09 的版本，切點對不到日文開口就併回去（逐字型一列最多 17 字，整塊型 28 字）。整塊型 08:50 起是 ⚠ 併塊，還沒切。沒有聲音，「日文字幕」那一列就是此刻在講什麼。</p>
+    <p class="sub-h">同一段稿子，左邊是改之前的顯示，右邊是熟肉樣式。右邊的切法可以切換：「硬切 12 字」是 10-10 採用、已經寫回稿子的版本；「有點才切」是 10-09 的版本，切點對不到日文開口就併回去（逐字型一列最多 17 字，整塊型 28 字）。整塊型 08:50 起是 ⚠ 併塊，這份快照還沒切（10-10 已照音量校時、切好寫回稿子）。沒有聲音，「日文字幕」那一列就是此刻在講什麼。</p>
     <div class="card">
       <div class="controls">
         <div class="seg" id="srcSeg" role="group" aria-label="來源">
@@ -246,7 +246,7 @@
         </tbody>
       </table>
     </div>
-    <p class="note-s">「對得到」＝列的起點離某個日文開口 0.1 秒內（稿上時間只到 0.1 秒）；「可能差 2 秒以上」＝對不到，而且前後兩個日文時間點相隔超過 2 秒。超過 12 字還剩 12–22%：多半是列內沒有標點可切（例如「隱約覺得如果能做點什麼就好了」），其餘是切出來的一段不到 0.8 秒，硬切也讀不完，所以併回；⚠ 併塊裡的 61 列沒動。NVf70eFnyjI 只有 284 列卻有 5 處 ⚠ 併塊（多出 5–19 秒空檔），改前就有兩成多可能差 2 秒以上。對到的是不是語意上正確的那個字，要靠精修讓切點跟著日文語序走；jurii 手對過 33 列，約六成準到 0.1 秒，最多差 0.9 秒。</p>
+    <p class="note-s">「對得到」＝列的起點離某個日文開口 0.1 秒內（稿上時間只到 0.1 秒）；「可能差 2 秒以上」＝對不到，而且前後兩個日文時間點相隔超過 2 秒。超過 12 字還剩 12–22%：多半是列內沒有標點可切（例如「隱約覺得如果能做點什麼就好了」），其餘是切出來的一段不到 0.8 秒，硬切也讀不完，所以併回；⚠ 併塊裡的列當時沒動，後來照音量校過再切。NVf70eFnyjI 只有 284 列卻有 5 處 ⚠ 併塊（多出 5–19 秒空檔），改前就有兩成多可能差 2 秒以上。對到的是不是語意上正確的那個字，要靠精修讓切點跟著日文語序走；jurii 手對過 33 列，約六成準到 0.1 秒，最多差 0.9 秒。</p>
   </section>
 
   <section>
@@ -316,7 +316,7 @@
       <div class="card"><span class="q">整塊型要不要補逐字時間？</span><span class="rec">決定：不補，不裝 Whisper</span><span class="why">顯卡只有 2060 6 GB，Whisper 日文辨識不好，流程也太複雜；YouTube 已經辨識過，不再多花時間。整塊型照樣硬切（10-10），⚠ 照舊用瀏覽器量音量找停頓來校（mz_9XZD5vQ0 用過）。</span></div>
       <div class="card"><span class="q">套用範圍？</span><span class="rec">決定：先只改疊字幕，做成字幕設定裡的開關</span><span class="why">先在 8 支影片上開關比較，再決定要不要預設開（開關是 Sonnet 提的）。逐字稿列表是拿來讀和搜尋的，標點有幫助，先不動。</span></div>
     </div>
-    <p class="sub-h" style="margin-top:18px">決定之後要做的事（10-10：除了 ⚠ 那項都做完）：</p>
+    <p class="sub-h" style="margin-top:18px">決定之後要做的事（10-10 全部做完）：</p>
     <ul class="todo">
       <li><span class="st">已做</span>字幕設定加「熟肉樣式」開關：<code>src/lib/subtitle.ts</code> 加轉換函式，<code>scripts/check-subtitle.mjs</code> 加它的測試。<span class="res">只換疊字幕，逐字稿列表不動；設定跟其他字幕設定一起記在瀏覽器。</span></li>
       <li><span class="st">已做</span>retime 改硬切（10-10）：在「。？！」（不夠再「，、」）切到 12 字以內，對不到日文開口也切；切出來不到 0.8 秒才併回。已經手校過 ⚠ 的段落（例如 mz_9XZD5vQ0 36:35.8）不動。<span class="res">8 支都用 <code>--resplit</code> 寫回稿子（沒有日文字幕檔的 3 支先用 yt-dlp 抓）：7,132 → 8,698 列，超過 12 字從 25–44% 降到 12–22%，重跑不再變；⚠ 併塊裡 61 列沒動。順手修掉 <code>--resplit</code> 少切的 bug：稿上時間四捨五入到 0.1 秒，列會對不到自己開頭那段日文。</span></li>
@@ -324,7 +324,7 @@
       <li><span class="st">已做</span><code>refine-subtitles</code> skill：精修清單（在對時之前跑），以及派校對 subagent 的指示。<span class="res">校對員 <code>subtitle-proofreader</code> 只讀、只出清單。兩個都在 <code>.claude/</code>，被 gitignore，只在這台電腦。</span></li>
       <li><span class="st">已做</span>腳本：判斷來源類型、產出校對對照表。<span class="res">每個模式第一行印來源類型；<code>--table</code> 印每列中文對這列時間內的日文，標出估、⚠、&gt;12、孤、無日文，以及有日文卻沒中文的「未翻?」。</span></li>
       <li><span class="st">已做</span>疊字幕的熟肉樣式只在空格換行（<code>word-break: keep-all</code>）。<span class="res">「而且」不會被拆成兩行；一段長到一行放不下才照字切。</span></li>
-      <li><span class="st no">待做</span>⚠ 併塊裡的 61 列：對畫面或量音量校過時間，再手動切。</li>
+      <li><span class="st">已做</span>⚠ 併塊：量音量校時間，再切到 12 字。<span class="res">6 支 39 塊，99 列 → 163 列。在瀏覽器播放，用 WebAudio 量音量，0.1 秒一格找開口和停頓，每段手排起訖；BTraK 36:26.8 照畫面字卡排。還超過 12 字的 17 列中間沒有標點，切不開。沒把握的 4 塊（旁白壓在 BGM 上、會場雜音）記在 <code>translation-guidelines.md</code> 各支的「已知待確認」。</span></li>
       <li><span class="st no">不做</span>Whisper：選了才做。<span class="res">10-09 決定不裝，什麼都沒裝。</span></li>
     </ul>
   </section>
