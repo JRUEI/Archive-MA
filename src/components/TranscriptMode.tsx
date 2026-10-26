@@ -674,6 +674,19 @@ export default function TranscriptMode({ video }: { video: VideoData }) {
           </span>
         </button>
 
+        {/* 原站截圖：畫面定位後工具列在下方看不到，側欄也放一顆 */}
+        <button
+          type="button"
+          onClick={openOnYouTube}
+          className="bg-white/95 dark:bg-zinc-900/95 hover:bg-accent/10 text-red-700 dark:text-accent font-bold p-2.5 sm:p-3 rounded-2xl shadow-xl flex flex-col items-center gap-1.5 transition-all hover:scale-110 border border-accent/30 backdrop-blur"
+          title="暫停並在 YouTube 開啟到目前這一秒（用截圖插件）"
+        >
+          <ExternalLink size={18} />
+          <span className="text-[13px] tracking-wider [writing-mode:vertical-lr] font-bold">
+            原站截圖
+          </span>
+        </button>
+
         {/* 逐字稿抽屜按鈕 */}
         <button
           type="button"
