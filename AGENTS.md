@@ -10,4 +10,5 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - 本地啟動：`dev_archive.bat`（port 3200）
 - 上線：GitHub Pages `https://jruei.github.io/Archive-MA/`，push 到 `master` 後由 `.github/workflows/deploy.yml` 靜態輸出並部署；新增／修改影片要 commit + push 才會上線。本機模擬：`GITHUB_ACTIONS=true npm run build`（`next.config.ts` 在 Actions 下才改成 export + basePath），產出 `out/`，要掛在 `/Archive-MA/` 底下才開得起來
 - 翻譯／修飾字稿的原則：`docs/translation-guidelines.md`
+- 字幕裡的馬娘／聲優名字上色：影片檔頭 `colors:`（`words` 比對字幕字串、`main` 填字、`sub` 有寫才多一圈細環，粗細統一 `NAME_RING`），疊層在 `SubtitleOverlay` 渲染；色來自ウマ娘公式站 `--color-main/--color-sub`，兩色太近或主色太暗的角色只留主色。預覽方案在 `docs/demos/demo_uma_color_variants.html`
 - 版面比較與方案提案做成 `docs/demos/demo_xxx.html`，不要寫成 Markdown 報告

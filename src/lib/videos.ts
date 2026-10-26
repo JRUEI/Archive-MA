@@ -3,6 +3,7 @@ import 'server-only';
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
+import { parseNameColors, type NameColor } from './subtitle';
 
 const videosDirectory = path.join(process.cwd(), 'content', 'videos');
 
@@ -27,6 +28,8 @@ export interface VideoListItem {
 export interface VideoData extends VideoListItem {
   youtubeUrl: string;
   transcript: TranscriptLine[];
+  /** 檔頭 colors：字幕裡這些名字上色 */
+  colors: NameColor[];
 }
 
 // [mm:ss.d] 或 [mm:ss.d-mm:ss.d]：小數可有可無，time 只取起點的整秒那段
@@ -68,6 +71,7 @@ export function getVideo(id: string): VideoData | null {
     date: data.date instanceof Date ? data.date.toISOString().split('T')[0] : String(data.date ?? ''),
     youtubeUrl: data.youtube || '',
     transcript,
+    colors: parseNameColors(data.colors),
   };
 }
 

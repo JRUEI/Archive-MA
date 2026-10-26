@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>馬娘名字上色方案比較</title>
+<style>
+:root{--bg:#f6f5f8;--card:#fff;--ink:#1d1b26;--mut:#6b6878;--line:#e3e0ec;--chip:#ece9f5;--accent:#6a4fd8}
+@media (prefers-color-scheme:dark){:root{--bg:#0f0e14;--card:#1a1823;--ink:#ecebf3;--mut:#9b98ab;--line:#2b2938;--chip:#26233a;--accent:#9d88ff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 "Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:22px;margin:0 0 4px}
+.sub{color:var(--mut);font-size:13px;margin:0 0 12px}
+.bar{display:flex;gap:8px;margin:14px 0}
+.chip{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:5px 14px;font:inherit;font-size:13px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.rules{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;font-size:13.5px;margin-bottom:16px}
+.rules b{color:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.hd{display:flex;gap:10px;align-items:center;padding:10px 14px}
+.sw{display:flex}.sw i{display:block;width:26px;height:26px;border:1px solid rgba(128,128,128,.35)}
+.sw i:first-child{border-radius:6px 0 0 6px}.sw i:last-child{border-radius:0 6px 6px 0;border-left:0}
+.hd b{font-size:14px}.hd small{display:block;color:var(--mut);font-size:12px;line-height:1.3}
+.row{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px 10px;background:linear-gradient(135deg,#3b6b4b,#8a6a3c 55%,#2d3a63)}
+body[data-stage=dark] .row{background:#14121c}
+body[data-stage=light] .row{background:linear-gradient(135deg,#dfe9d6,#f3ead2 55%,#cfdcf0)}
+.row+.row{border-top:1px solid rgba(128,128,128,.25)}
+.tag{align-self:flex-start;font-size:11.5px;color:#eee;line-height:1.3;text-shadow:0 0 3px #000}
+body[data-stage=light] .tag{color:#222;text-shadow:none}
+.mid{text-align:center;max-width:100%}
+/* 實際字幕：白字、黑色 75% 底條、沒有描邊 */
+.s{font-size:26px;font-weight:700;line-height:1.35;color:#fff;font-family:"Noto Sans TC","Microsoft JhengHei",sans-serif}
+.bar{background:rgba(0,0,0,.75);border-radius:.18em;padding:0 .4em .112em;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.v0 .n{color:var(--m);-webkit-text-stroke:5px var(--s);paint-order:stroke fill}
+.v1 .n{color:var(--m);-webkit-text-stroke:2px var(--s);paint-order:stroke fill}
+.v2 .n{color:var(--m)}
+.v3 .n{color:var(--s);-webkit-text-stroke:2px var(--m);paint-order:stroke fill}
+.n.v{text-decoration:underline dotted;text-decoration-thickness:2px;text-underline-offset:6px}
+</style>
+</head>
+<body data-stage="video">
+<div class="wrap">
+<h1>馬娘名字上色：外框太搶、兩色太近怎麼辦</h1>
+<p class="sub">10 位：你點名的 8 位＋2 位對照組（スペシャルウィーク、トウカイテイオー，原本就好讀）。</p>
+<div class="rules">
+<b>先更正</b>：上一版預覽我用錯了——實際字幕是「白字＋黑色 75% 底條」，<b>沒有任何黑色描邊</b>。這版底條、字級、粗細都照 SubtitleOverlay.tsx（粗體、圓角 .18em 底條），26px ≈ 寬約 590px 的舞台。<br>
+<b>問題</b>：輔色外框是唯一的邊，5px 粗外框搶過填字；主輔色對比 &lt;2 時（ブー 1.24、ピコ 1.18、ダンツ 1.28…）填字和外框糊在一起；主色很暗（ラヴズ）會融進黑底條。<br>
+<b>方案</b>：<b>V1</b> 輔色縮成細環（描邊 2px），主色仍是填字。<b>V2</b> 只用主色、不描邊，給兩色太近的用。<b>V3</b> 主輔對調（輔色填字、主色細環），給主色太暗的用。
+</div>
+<div class="bar" id="bar"></div>
+<div class="grid" id="grid"></div>
+</div>
+<script>
+const R=[{"uma":"ブラストワンピース","main":"#009CBD","sub":"#0CB85F","p":[{"t":"不過"},{"t":"ブーちゃん","k":"u"},{"t":"是很有活力、"}],"cr":1.24,"lm":0.27,"ctrl":false},{"uma":"マヤノトップガン","main":"#F57D38","sub":"#FFC845","p":[{"t":"星谷","k":"v"},{"t":"小姐和新田小姐，"}],"cr":1.73,"lm":0.34,"ctrl":false},{"uma":"アーモンドアイ","main":"#69A9E9","sub":"#CC3300","p":[{"t":"是"},{"t":"アーモンドアイ","k":"u"},{"t":"世代，"}],"cr":2.09,"lm":0.37,"ctrl":false},{"uma":"ラヴズオンリーユー","main":"#424840","sub":"#268745","p":[{"t":"遊戲裡實裝了"},{"t":"ラヴズ","k":"u"},{"t":"，"}],"cr":2.08,"lm":0.06,"ctrl":false},{"uma":"ダンツフレーム","main":"#E97D97","sub":"#119D76","p":[{"t":"沒有完全展現"},{"t":"ダンツ","k":"u"},{"t":"的魅力，"}],"cr":1.28,"lm":0.34,"ctrl":false},{"uma":"キングヘイロー","main":"#0E9451","sub":"#1C57A5","p":[{"t":"キングヘイロー","k":"u"},{"t":"實裝的時候，"}],"cr":1.82,"lm":0.22,"ctrl":false},{"uma":"スイープトウショウ","main":"#926DDA","sub":"#BC204B","p":[{"t":"杉浦しおり","k":"v"},{"t":"ちゃん，"}],"cr":1.57,"lm":0.22,"ctrl":false},{"uma":"ビコーペガサス","main":"#E7396F","sub":"#D162B8","p":[{"t":"是"},{"t":"ピコ","k":"u"},{"t":"ちゃん幫助"}],"cr":1.18,"lm":0.21,"ctrl":false},{"uma":"スペシャルウィーク","main":"#EE6DCB","sub":"#FFDEF9","p":[{"t":"過去由總大將"},{"t":"あじゅじゅ","k":"v"},{"t":"，"}],"cr":2.22,"lm":0.33,"ctrl":true},{"uma":"トウカイテイオー","main":"#3376D2","sub":"#FF99D0","p":[{"t":"我和"},{"t":"トウカイテイオー","k":"u"},{"t":"役的"}],"cr":2.3,"lm":0.18,"ctrl":true}];
+const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e};
+const bar=document.getElementById('bar');
+[['video','影片色'],['dark','暗場景'],['light','亮場景']].forEach(([k,t])=>{const b=el('button','chip',t);b.dataset.s=k;b.setAttribute('aria-pressed',k==='video');
+ b.onclick=()=>{document.body.dataset.stage=k;bar.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.s===k))};bar.append(b)});
+const lab={v0:'V0 現行',v1:'V1 細環',v2:'V2 只主色',v3:'V3 對調'};
+R.forEach(r=>{
+ const c=el('div','card');c.style.setProperty('--m',r.main);c.style.setProperty('--s',r.sub);
+ c.append(el('div','hd','<div class="sw"><i style="background:'+r.main+'"></i><i style="background:'+r.sub+'"></i></div><div><b>'+r.uma+(r.ctrl?'（對照）':'')+'</b><small>主輔對比 '+r.cr+':1　主色亮度 '+r.lm+'</small></div>'));
+ ['v0','v1','v2','v3'].forEach(v=>{
+  const html=r.p.map(x=>x.k?'<span class="n'+(x.k==='v'?' v':'')+'">'+x.t+'</span>':x.t).join('');
+  c.append(el('div','row '+v,'<span class="tag">'+lab[v]+'</span><span class="mid"><span class="s"><span class="bar">'+html+'</span></span></span>'));
+ });
+ document.getElementById('grid').append(c);
+});
+</script>
+</body>
+</html>

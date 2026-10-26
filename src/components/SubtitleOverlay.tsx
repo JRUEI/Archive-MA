@@ -1,7 +1,15 @@
 'use client';
 
 import { useEffect, useState, type CSSProperties, type RefObject } from 'react';
-import { plainSubtitle, rowAt, type SubtitleRow, type SubtitleStyle } from '@/lib/subtitle';
+import {
+  colorizeSubtitle,
+  NAME_RING,
+  plainSubtitle,
+  rowAt,
+  type NameColor,
+  type SubtitleRow,
+  type SubtitleStyle,
+} from '@/lib/subtitle';
 
 /* 底條高 = 字型的 ascent + descent，各平台字型不同就不一樣，所以字型固定 Noto Sans TC（1.16 + 0.288 em）。
    中文字面在基線上 0.88、下 0.12 em：底條上緣到字面 1.16 − 0.88 = 0.28，下緣 0.288 − 0.12 = 0.168，
@@ -19,6 +27,7 @@ export default function SubtitleOverlay({
   style,
   offsetMs,
   plain,
+  colors,
 }: {
   playerRef: RefObject<{ getCurrentTime: () => number } | null>;
   rows: readonly SubtitleRow[];
@@ -26,6 +35,8 @@ export default function SubtitleOverlay({
   offsetMs: number;
   /** 熟肉樣式：不顯示句讀 */
   plain: boolean;
+  /** 檔頭 colors：名字上色（主色填字，有輔色就多一圈細環） */
+  colors: readonly NameColor[];
 }) {
   const [index, setIndex] = useState(-1);
 
@@ -79,7 +90,21 @@ export default function SubtitleOverlay({
             </div>
             <div className="absolute inset-0">
               <span className={BAR}>
-                {text}
+                {colorizeSubtitle(text, colors).map((part, i) =>
+                  part.main ? (
+                    <span
+                      key={i}
+                      style={{
+                        color: part.main,
+                        ...(part.sub && { WebkitTextStroke: `${NAME_RING} ${part.sub}`, paintOrder: 'stroke fill' }),
+                      }}
+                    >
+                      {part.text}
+                    </span>
+                  ) : (
+                    part.text
+                  ),
+                )}
               </span>
             </div>
           </>

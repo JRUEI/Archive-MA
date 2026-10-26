@@ -21,6 +21,17 @@ for (const file of files) {
   const id = String(data.youtube ?? "").match(ID)?.[1];
   if (data.youtube && id !== file.replace(/\.md$/, "")) fail(`youtube 連結的 ID（${id ?? "解析不出"}）和檔名不符`);
 
+  if (data.colors !== undefined) {
+    const hex = /^#[0-9a-fA-F]{6}$/;
+    if (!Array.isArray(data.colors)) fail("colors 要是陣列");
+    else
+      data.colors.forEach((c, i) => {
+        if (!Array.isArray(c?.words) || !c.words.length || c.words.some((w) => typeof w !== "string" || !w)) fail(`colors[${i}] 的 words 要是非空字串陣列`);
+        if (!hex.test(c?.main ?? "")) fail(`colors[${i}] 的 main 要是 #RRGGBB`);
+        if (c?.sub !== undefined && !hex.test(c.sub)) fail(`colors[${i}] 的 sub 要是 #RRGGBB`);
+      });
+  }
+
   let prev = -1;
   let prevEnd = null; // 上一行寫的訖，不能晚於這一行的起點
   let count = 0;

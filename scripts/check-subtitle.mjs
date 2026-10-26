@@ -5,6 +5,8 @@ import {
   DEFAULT_SUBTITLE_STATE,
   balanceQuotes,
   buildSubtitleRows,
+  colorizeSubtitle,
+  parseNameColors,
   parseSubtitleState,
   plainSubtitle,
   rowAt,
@@ -141,5 +143,28 @@ const good = {
   plain: true,
 };
 assert.deepEqual(parseSubtitleState(JSON.stringify(good)), good, '正常的存檔原樣讀回');
+
+// ── 名字上色 ──
+const names = parseNameColors([
+  { words: ['オル', 'オルフェーヴル'], main: '#BE4134', sub: '#ECD898' },
+  { words: ['星谷'], main: '#F57D38' },
+  { words: [], main: '#000000' },
+  { words: ['壞'], main: 'red' },
+]);
+assert.equal(names.length, 2, 'words 空的、main 不是 #RRGGBB 的項目丟掉');
+assert.deepEqual(
+  colorizeSubtitle('オルフェーヴルと星谷小姐', names),
+  [
+    { text: 'オルフェーヴル', main: '#BE4134', sub: '#ECD898' },
+    { text: 'と' },
+    { text: '星谷', main: '#F57D38' },
+    { text: '小姐' },
+  ],
+  '長的詞先比（不會被「オル」吃掉一半）、沒有 sub 就沒有環、其餘字原樣留',
+);
+assert.deepEqual(colorizeSubtitle('沒有名字', names), [{ text: '沒有名字' }], '沒命中：整列一段');
+assert.deepEqual(colorizeSubtitle('星谷', []), [{ text: '星谷' }], '沒設 colors：原樣');
+assert.deepEqual(parseNameColors('nope'), [], 'colors 不是陣列：空');
+assert.equal(colorizeSubtitle('a.b(c)', parseNameColors([{ words: ['.b(', ')'], main: '#000000' }])).length, 4, '詞裡的 regex 符號照字面比');
 
 console.log('check-subtitle: ok');

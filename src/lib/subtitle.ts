@@ -139,6 +139,55 @@ export function subtitleEnd(start: number, text: string, nextStart: number): num
   return Math.min(nextStart, start + Math.min(6, Math.max(2, 1.2 + 0.28 * chars)));
 }
 
+/** 影片檔頭 colors 的一筆：words 裡的字在字幕裡用 main 上色，有 sub 就多一圈細環 */
+export interface NameColor {
+  words: string[];
+  main: string;
+  sub?: string;
+}
+
+/** 輔色細環的粗細（描邊寬，一半在字外）：用 em 跟著字號與全螢幕縮放 */
+export const NAME_RING = '0.11em';
+
+const HEX = /^#[0-9a-fA-F]{6}$/;
+
+/** 讀 frontmatter 的 colors：不是陣列、缺 words 或 main 不是 #RRGGBB 的項目直接丟掉，不丟錯 */
+export function parseNameColors(raw: unknown): NameColor[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((item): NameColor[] => {
+    const o = (item && typeof item === 'object' ? item : {}) as Record<string, unknown>;
+    const words = Array.isArray(o.words) ? o.words.filter((w): w is string => typeof w === 'string' && w !== '') : [];
+    if (!words.length || typeof o.main !== 'string' || !HEX.test(o.main)) return [];
+    const sub = typeof o.sub === 'string' && HEX.test(o.sub) ? o.sub : undefined;
+    return [{ words, main: o.main, ...(sub && { sub }) }];
+  });
+}
+
+export interface ColoredPart {
+  text: string;
+  main?: string;
+  sub?: string;
+}
+
+/** 把一列字幕切成「一般字／要上色的名字」幾段；長的詞先比，所以「オルフェーヴル」不會被「オル」吃掉一半 */
+export function colorizeSubtitle(text: string, colors: readonly NameColor[]): ColoredPart[] {
+  const byWord = new Map<string, NameColor>();
+  for (const c of colors) for (const w of c.words) if (!byWord.has(w)) byWord.set(w, c);
+  if (!byWord.size) return [{ text }];
+  const words = [...byWord.keys()].sort((a, b) => b.length - a.length);
+  const re = new RegExp(words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g');
+  const parts: ColoredPart[] = [];
+  let last = 0;
+  for (const m of text.matchAll(re)) {
+    if (m.index > last) parts.push({ text: text.slice(last, m.index) });
+    const c = byWord.get(m[0])!;
+    parts.push({ text: m[0], main: c.main, ...(c.sub && { sub: c.sub }) });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push({ text: text.slice(last) });
+  return parts;
+}
+
 export interface SubtitleRow {
   start: number;
   end: number;
