@@ -11,7 +11,7 @@ import {
   SUBTITLE_STORAGE_KEY,
   type SubtitleState,
 } from '@/lib/subtitle';
-import { Search, X, FileText, Crosshair, Clock, RectangleHorizontal, Tv } from 'lucide-react';
+import { Search, X, FileText, Crosshair, Clock, RectangleHorizontal, Tv, ExternalLink } from 'lucide-react';
 import SubtitleOverlay from './SubtitleOverlay';
 import SubtitleToolbar, { BAR_BTN, LABEL, SwitchTrack } from './SubtitleToolbar';
 
@@ -19,6 +19,7 @@ import SubtitleToolbar, { BAR_BTN, LABEL, SwitchTrack } from './SubtitleToolbar'
 interface YTPlayer {
   seekTo(seconds: number, allowSeekAhead: boolean): void;
   playVideo(): void;
+  pauseVideo?(): void;
   getCurrentTime(): number;
   destroy(): void;
   /** 沒有文件、但嵌入播放器有：關掉原生字幕模組。缺了就當沒這個功能 */
@@ -255,6 +256,15 @@ export default function TranscriptMode({ video }: { video: VideoData }) {
     player.seekTo(sec, true);
     setActiveIndex(findActiveIndex(sec));
   }, [findActiveIndex]);
+
+  // 在 YouTube 原頁開到目前這一秒：嵌入的 iframe 裡截圖插件不會注入，原頁才有。先暫停，免得兩邊同時出聲
+  const openOnYouTube = useCallback(() => {
+    const player = playerRef.current;
+    if (!videoId || typeof player?.getCurrentTime !== 'function') return;
+    const sec = Math.floor(player.getCurrentTime());
+    player.pauseVideo?.();
+    window.open(`https://www.youtube.com/watch?v=${videoId}&t=${sec}s`, '_blank', 'noopener,noreferrer');
+  }, [videoId]);
 
   // 立即平滑滾動定位至當前播放句（免手動滑動滾輪）
   const scrollToActive = useCallback(() => {
@@ -543,6 +553,16 @@ export default function TranscriptMode({ video }: { video: VideoData }) {
               >
                 <Search size={16} aria-hidden="true" className="shrink-0" />
                 <span className={LABEL}>完整字幕</span>
+              </button>
+              <button
+                type="button"
+                onClick={openOnYouTube}
+                aria-label="在 YouTube 開啟此刻"
+                title="暫停並在 YouTube 開啟到目前這一秒（用截圖插件）"
+                className={BAR_BTN}
+              >
+                <ExternalLink size={16} aria-hidden="true" className="shrink-0" />
+                <span className={LABEL}>YouTube 此刻</span>
               </button>
               {/* 只給觸控裝置：iPhone 的瀏覽器沒有元素全螢幕（工具列那顆全螢幕鈕不會出現），這顆自己鋪滿並轉橫 */}
               <button
