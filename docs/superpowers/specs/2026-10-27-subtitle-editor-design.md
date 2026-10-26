@@ -62,7 +62,7 @@ tools/subtitle-editor/
 
 警告（黃）：
 - 一列超過 12 字（去標點後算，同 retime 的 `MAX`）。
-- 停留太短（少於字數所需的最低讀取時間）。
+- 停留太短：少於 `retime-subtitles.mjs` 的 `must(字數)`（0.4 秒加字數除以每秒 9 字，且不低於其 `MIN_ABS`）。
 
 規則與 `scripts/validate-content.mjs` 一致；存檔後伺服器再跑一次同一套檢查，結果與 validate:content 相同。
 
